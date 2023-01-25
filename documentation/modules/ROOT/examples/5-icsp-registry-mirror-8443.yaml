@@ -1,0 +1,12 @@
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: icsp-registry-mirror-8443
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - registry.dsal:8443/mirror/openshift/release-images
+    source: quay.io/openshift-release-dev/ocp-release
+  - mirrors:
+    - registry.dsal:8443/mirror/openshift/release
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev

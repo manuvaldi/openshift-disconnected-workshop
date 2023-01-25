@@ -1,20 +1,120 @@
-= Welcome to Template Tutorial
+= Welcome to Openshift Disconnected Workshop
 :page-layout: home
 :!sectids:
 
-[.text-center.strong]
-== Publish Services to Kubernetes
+Openshift 4 supports disconnected installations. But some components need to be configured on day 2 to give the same service as a connected Cluster.
 
-A Kubernetes tutorial to show how you can deploy a Java service to a Kubernetes cluster as it was a child game.
+In this workshop you'll learn about:
+
+* Different types of mirroring Openshift images
+* Disconnect a cluster
+* Upgrade a cluster in a disconnected environment
+* Ways of getting available Operators and their images 
+* Deploy a disconnected cluster
+* Upload of Insight and Telemeter information to the cloud
+* Mirror of Openshift Samples Operator images
+* Deploy our own Openshift Update Service
+
 
 [.tiles.browse]
-== Browse modules
+== Index Content 
 
 [.tile]
-.xref:01-setup.adoc[Get Started]
-* xref:01-setup.adoc#minikube[Minikube]
 
-[.tile]
-.xref:02-deploy.adoc[Deploying]
-* xref:02-deploy.adoc#package[Package the Application]
-* xref:02-deploy.adoc#deploy[Deploy the Application]
+* xref:01-Setup.adoc[Setup]
+** xref:01-Setup.adoc#prerequisite[Prerequisites]
+*** xref:01-Setup.adoc#prerequisite-binaries[kcli and binaries]
+*** xref:01-Setup.adoc#presequisites-sshuttle[sshuttle]
+** xref:01-Setup.adoc#registryvm[Registry VM]
+*** xref:01-Setup.adoc#registryvm-registryv2[Create registry with registry:v2 image (classic)]
+*** xref:01-Setup.adoc#registryvm-mirror-registry[Create registry with mirror-registry]
+*** xref:01-Setup.adoc#registryvm-quay-standalone[Create Registry Quay standalone with proxy cache/mirror functionality]
+*** xref:01-Setup.adoc#registryvm-cachecontainer[Creating Registry Cache with registry-cache container]
+** xref:01-Setup.adoc#testing-registries[Testing registries]
+
+* xref:02-Deploy-Cluster.adoc[Cluster Deployment]
+
+
+* xref:03-Mirror-OCP-Images.adoc[Mirroring Openshift Images]
+** xref:03-Mirror-OCP-Images.adoc#mirroroc[Mirror with oc binary]
+** xref:03-Mirror-OCP-Images.adoc#mirrorocmirror[Mirror with oc-mirror binary]
+
+* xref:04-Convert-Cluster-Disconnected.adoc[Convert Cluster to disconnected]
+** xref:04-Convert-Cluster-Disconnected.adoc#importca[Import CA certificates]
+** xref:04-Convert-Cluster-Disconnected.adoc#configuremirrors[Configure mirrors in the cluster]
+** xref:04-Convert-Cluster-Disconnected.adoc#updatepullsecret[Update global pull secret]
+** xref:04-Convert-Cluster-Disconnected.adoc#isolatecluster[Isolate the cluster]
+** xref:04-Convert-Cluster-Disconnected.adoc#reboot[Reboot node and check registry logs]
+
+
+
+* xref:05-Disconnected-Upgrades.adoc[Disconnected Upgrades]
+** xref:05-Disconnected-Upgrades.adoc#upgrade1[Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)]
+** xref:05-Disconnected-Upgrades.adoc#upgrade2[Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)]
+** xref:05-Disconnected-Upgrades.adoc#upgrade3[Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)]
+
+
+* xref:06-Disconnected-Deployment.adoc[Disconnected Deployment]
+
+
+* xref:07-Disconnected-Operators.adoc[Disconnected Catalogs and Operators]
+** xref:07-Disconnected-Operators.adoc#catalogs[Disconnected Catalogs]
+*** xref:07-Disconnected-Operators.adoc#defaultmirrored[Default catalogs with images mirrored and `ImageContentSourcePolicy`]
+*** xref:07-Disconnected-Operators.adoc#defaultmirrroredcustomcatalogs[Default catalogs with images mirrored and Custom catalogs]
+*** xref:07-Disconnected-Operators.adoc#customcatalog[Custom catalog]
+** xref:07-Disconnected-Operators.adoc#operators[Disconnected Operators]
+*** xref:07-Disconnected-Operators.adoc#mirroringoc[Mirroring with `oc`]
+*** xref:07-Disconnected-Operators.adoc#mirroringocmirror[Mirroring with `oc-mirror`]
+**** xref:07-Disconnected-Operators.adoc#imagesetcustomcatalog[ImageSet for custom catalog index]
+**** xref:07-Disconnected-Operators.adoc#imagesetfiltered[ImageSet for official catalog filtered]
+
+
+* xref:08-Insights-and-Telemetry.adoc[Insights and Telemetry services]
+** xref:08-Insights-and-Telemetry.adoc#insights[Insights]
+*** xref:08-Insights-and-Telemetry.adoc#disableinsights[Disable Insights]
+*** xref:08-Insights-and-Telemetry.adoc#insightsmanualupload[Manual upload]
+** xref:08-Insights-and-Telemetry.adoc#telemetry[Telemetry client]
+*** xref:08-Insights-and-Telemetry.adoc#telemetrymanualupload[Manual Upload]
+
+
+* xref:09-Cluster-Samples.adoc[Cluster Samples Operator]
+
+
+* xref:10-Openshift-Update-Service.adoc[Openshift Update Service]
+
+
+* xref:11-Proxy.adoc[Cluster-wide Proxy]
+
+
+* xref:99-References.adoc[References]
+
+// TODO - NTP 
+
+== Contributors
+
+This workshop has been developed and is maintained by https://github.com/manuvaldi[Manuel Valle].
+
+
+//= Welcome to Template Tutorial
+// :page-layout: home
+// :!sectids:
+
+// [.text-center.strong]
+// == Publish Services to Kubernetes
+
+// A Kubernetes tutorial to show how you can deploy a Java service to a Kubernetes cluster as it was a child game.
+
+// [.tiles.browse]
+// == Browse modules
+
+// [.tile]
+// .xref:01-setup.adoc[Get Started]
+// * xref:01-setup.adoc#minikube[Minikube]
+
+// [.tile]
+// .xref:02-deploy.adoc[Deploying]
+// * xref:02-deploy.adoc#package[Package the Application]
+// * xref:02-deploy.adoc#deploy[Deploy the Application]
+
+
+

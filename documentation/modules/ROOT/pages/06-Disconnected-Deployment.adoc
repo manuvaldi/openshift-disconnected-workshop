@@ -1,0 +1,128 @@
+= Disconnected deployment
+include::_attributes.adoc[]
+
+We will mirror 4.11.20 Openshift release images in registry-mirror (8443), so create imageset config file `6-imageset-config.yaml`
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$6-imageset-config.yaml[]
+----
+
+- Run mirror
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc-mirror --config=./6-imageset-config.yaml  docker://registry.dsal:8443/mirror
+----
+
+- Copy release image to releases repository (kcli requirements reason):
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc image mirror -a ~/pull-secret-all.json \
+  registry.dsal:8443/mirror/openshift/release-images:4.11.20-x86_64 \
+  registry.dsal:8443/mirror/openshift/release:4.11.20-x86_64
+oc image mirror -a ~/pull-secret-all.json \
+  registry.dsal:8443/mirror/openshift/release-images:4.11.20-x86_64 \
+  registry.dsal:8443/mirror/openshift/release:4.11.20
+----
+
+- Mirror kcli images
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/curl:latest registry.dsal:8443/karmab/curl:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-coredns:latest registry.dsal:8443/karmab/origin-coredns:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/haproxy:latest registry.dsal:8443/karmab/haproxy:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-keepalived-ipfailover:latest registry.dsal:8443/karmab/origin-keepalived-ipfailover:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/mdns-publisher:latest registry.dsal:8443/karmab/mdns-publisher:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kubectl:latest registry.dsal:8443/karmab/kubectl:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kcli:latest registry.dsal:8443/karmab/kcli:latest
+----
+
+- Deploy cluster with kcli
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+kcli create kube openshift \
+-P ctlplanes=1 -P workers=0 \
+-P ctlplanes_memory=16384 \
+-P disk_size=120 \
+-P tag=4.11.20 \
+-P pull_secret=~/pull-secret-all.json  \
+-P cluster=lab-test-disconnected \
+-P domain=labdis.dsal \
+-P disconnected_url=registry.dsal:8443 \
+-P disconnected_prefix=mirror/openshift/release \
+-P disconnected_user=registry \
+-P disconnected_password=redhat12345678 \
+-P ca="$(cat ~/ca.crt)" \
+-P api_ip=192.168.122.252 \
+ kcli-ocp-dis-dsal
+----
+
+- Take a look to the install-config.yaml created by kcli
+
+[.console-output]
+[source,yaml,subs="+macros,+attributes"]
+----
+$ cat ~/.kcli/clusters/lab-test-disconnected/install-config.yaml.bck
+
+apiVersion: v1
+baseDomain: labdis.dsal
+compute:
+- name: worker
+  replicas: 0
+controlPlane:
+  name: master
+  replicas: 1
+metadata:
+  name: lab-test-disconnected
+networking:
+  networkType: OpenShiftSDN
+  clusterNetwork:
+  - cidr: 10.132.0.0/14
+    hostPrefix: 23
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+additionalTrustBundle: |
+ -----BEGIN CERTIFICATE-----
+ MIIFKzCCAxOgAwIBAgIUGpiiFiCmsl3itVIecAblpdHqM0MwDQYJKoZIhvcNAQEL
+ ...
+ -----END CERTIFICATE-----
+pullSecret: '{"auths": {"registry.dsal:8443": {"auth": "cmVnaXN0cnk6cmVkaGF0MTIzNDU2Nzg=", "email": "jhendrix@karmalabs.corp"}}}'
+sshKey: |
+  ssh-rsa AAAAB3Nz...
+imageContentSources:
+- mirrors:
+  - registry.dsal:8443/mirror/openshift/release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+- mirrors:
+  - registry.dsal:8443/mirror/openshift/release
+  source: quay.io/ocp-release
+----
+
+- Check cluster it's working. Export `KUBECONFIG` variable:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+export KUBECONFIG=/root/.kcli/clusters/lab-test-disconnected/auth/kubeconfig
+----
+
+- And then, to check all is correct
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc get clusterversion,nodes,co
+----
+
+

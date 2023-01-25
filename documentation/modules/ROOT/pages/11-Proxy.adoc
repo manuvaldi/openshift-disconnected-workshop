@@ -1,0 +1,29 @@
+= Proxy
+include::_attributes.adoc[]
+
+The way of connect a disconnected cluster included images, telemetry and insights, may be via:
+
+. Routing. Probably a firewall manage which connection are allowed
+. Proxy or Proxy filtering
+
+To configure a proxy in a cluster you will edit the proxy object:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+apiVersion: config.openshift.io/v1
+kind: Proxy
+metadata:
+  name: cluster
+spec:
+  httpProxy: http://registry.dsal:3128
+  httpsProxy: http://registry.dsal:3128
+  noProxy: registry.dsal
+  readinessEndpoints:
+  - http://www.google.com
+  - https://www.google.com
+  trustedCA:
+    name: user-ca-bundle
+----
+
+Remember that if you have a cluster with proxy, the images can be downloaded with it, so we don't need the ImageContentSourcePolicy neither disable Default catalogs.

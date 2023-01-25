@@ -1,0 +1,115 @@
+= Insights and Telemetry
+include::_attributes.adoc[]
+
+There services on a Openshift Cluster need Internet, but we can workaround to upload this info in a controlled way. So, there are these options:
+
+. Disable both services
+. Manual upload (job via proxy)
+. Usin a cluster-wide proxy
+
+
+[#insights]
+== Insights
+
+[#disableinsights]
+=== Disable Insights
+
+- Download the global cluster pull secret to your local file system:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc extract secret/pull-secret -n openshift-config --to=.
+----
+
+- Edit file `.dockerconfigjson` (make a copy before), and remove the `cloud.openshift.com` JSON entry.
+
+- Update global secret:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=.dockerconfigjson
+----
+
+[#insightsmanualupload]
+=== Manual upload (job via proxy)
+
+- Run a proxy in registry VM
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman run -d --name squid-container -e TZ=UTC -p 3128:3128 ubuntu/squid
+----
+
+- Extract token from pull secret for cloud.redhat.com
+
+- Extract clusterid from cluster:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc get clusterversion -o jsonpath='{.items[].spec.clusterID}{"\n"}'
+----
+
+- Create job and update environment variables TOKEN, CLUSTERID and HTTPS_PROXY properly (`8-insights-job.yaml`)
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$8-insights-job.yaml[]
+----
+
+- and run job:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 8-insights-job.yaml
+----
+
+[NOTE]
+====
+You can run again the job deleting it and applying again
+
+If you wants to do it recurrently, you could create a K8s cronjob
+====
+
+
+[#telemetry]
+== Telemetry client
+
+The telemetry service/client is a component of Openshift Monitoring. For this service there are 3 options:
+
+1) Disable: Same way as Insight, removing credentiasl from global pull-secret
+2) Manual upload (job via proxy)
+3) Using a cluster-wide proxy
+
+
+[#telemetrymanualupload]
+=== Manual Upload
+
+Actually, it's an "unsupported" way of forcing sending metrics data.
+
+IMPORTANT: This service is only installed if in the global pull-secret are the credentials for `cloud.redhat.com`. So, if in your cluster is not configured, added it again.
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=./pull-secret-all.json
+----
+
+Once added, wait or force deletion of the operator pod to reconcile, and it can (re)create the telemeter-client pod.
+
+The only thing we will do it's adding the `HTTPS_PROXY` variable in the deployment. Just execute:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc set env -n openshift-monitoring deployment/telemeter-client -c telemeter-client HTTPS_PROXY=registry.dsal:3128
+----
+
+When Monitoring Operator reconciles the changes will be lost, so we can execute this command in a cronjob or externally.
+
+To check the status and telemetry, browse in `https://console.redhat.com/openshift`

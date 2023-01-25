@@ -1,0 +1,101 @@
+= Cluster Deployment
+include::_attributes.adoc[]
+
+We will use the Hypervisor to deploy cluster with `kcli`. Connect to it via ssh, become `root` and follow the steps. This first installation is a connected deployment. All images will be downloaded from Internet.
+
+- Install openshift tools
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+dnf -y -q install wget
+wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz
+tar xvfz openshift-client-linux.tar.gz
+mv oc /usr/local/bin/
+mv kubectl /usr/local/bin/
+rm -f openshift-client-linux.tar.gz
+echo "export PATH=$PATH:/usr/local/bin/" >> ~/.bashrc
+----
+
+- Copy pull secret (`pull-secret-all.json`) from `registry` VM to the hypervisor:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+kcli scp registry:/tmp/pull-secret-all.json .
+----
+
+NOTE: Copy before in the registry VM the pull-secret-all.json file to /tmp
+
+- Deploy cluster with `kcli`
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+kcli create kube openshift \
+-P ctlplanes=1 \
+-P workers=0 \
+-P ctlplane_memory=16384 \
+-P disk_size=120 \
+-P tag=4.9.10 \
+-P pull_secret=/root/pull-secret-all.json  \
+-P cluster=lab-test \
+-P domain=lab.dsal \
+-P api_ip=192.168.122.253 \
+kcli-ocp-dsal
+----
+
+- Check cluster it's working. Export `KUBECONFIG` variable:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+export KUBECONFIG=/root/.kcli/clusters/lab-test/auth/kubeconfig
+----
+
+- And then
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+# oc get clusterversion,nodes,co
+NAME                                         VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+clusterversion.config.openshift.io/version   4.9.10    True        False         65m     Cluster version is 4.9.10
+
+NAME                                STATUS   ROLES           AGE   VERSION
+node/lab-test-ctlplane-0.lab.dsal   Ready    master,worker   80m   v1.22.3+ffbb954
+
+NAME                                                                           VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+clusteroperator.config.openshift.io/authentication                             4.9.10    True        False         False      43m     
+clusteroperator.config.openshift.io/baremetal                                  4.9.10    True        False         False      77m     
+clusteroperator.config.openshift.io/cloud-controller-manager                   4.9.10    True        False         False      79m     
+clusteroperator.config.openshift.io/cloud-credential                           4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/cluster-autoscaler                         4.9.10    True        False         False      77m     
+clusteroperator.config.openshift.io/config-operator                            4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/console                                    4.9.10    True        False         False      42m     
+clusteroperator.config.openshift.io/csi-snapshot-controller                    4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/dns                                        4.9.10    True        False         False      77m     
+clusteroperator.config.openshift.io/etcd                                       4.9.10    True        False         False      77m     
+clusteroperator.config.openshift.io/image-registry                             4.9.10    True        False         False      74m     
+clusteroperator.config.openshift.io/ingress                                    4.9.10    True        False         False      75m     
+clusteroperator.config.openshift.io/insights                                   4.9.10    True        False         False      76m     
+clusteroperator.config.openshift.io/kube-apiserver                             4.9.10    True        False         False      74m     
+clusteroperator.config.openshift.io/kube-controller-manager                    4.9.10    True        False         False      77m     
+clusteroperator.config.openshift.io/kube-scheduler                             4.9.10    True        False         False      76m     
+clusteroperator.config.openshift.io/kube-storage-version-migrator              4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/machine-api                                4.9.10    True        False         False      77m     
+clusteroperator.config.openshift.io/machine-approver                           4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/machine-config                             4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/marketplace                                4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/monitoring                                 4.9.10    True        False         False      65m     
+clusteroperator.config.openshift.io/network                                    4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/node-tuning                                4.9.10    True        False         False      77m     
+clusteroperator.config.openshift.io/openshift-apiserver                        4.9.10    True        False         False      71m     
+clusteroperator.config.openshift.io/openshift-controller-manager               4.9.10    True        False         False      74m     
+clusteroperator.config.openshift.io/openshift-samples                          4.9.10    True        False         False      71m     
+clusteroperator.config.openshift.io/operator-lifecycle-manager                 4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/operator-lifecycle-manager-catalog         4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/operator-lifecycle-manager-packageserver   4.9.10    True        False         False      75m     
+clusteroperator.config.openshift.io/service-ca                                 4.9.10    True        False         False      78m     
+clusteroperator.config.openshift.io/storage                                    4.9.10    True        False         False      78m     
+----

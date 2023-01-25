@@ -1,0 +1,151 @@
+= Openshift Update Service disconnected
+include::_attributes.adoc[]
+
+First of all, we need a to install Openshift Update Service Operator following next steps:
+
+- Create a yaml file with the namespace, the operator group and de subscription (`10-update-service-operator.yaml`)
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$10-update-service-operator.yaml[]
+----
+
+- Apply it
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 10-update-service-operator.yaml
+----
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+namespace/openshift-update-service created
+operatorgroup.operators.coreos.com/update-service-operator-group created
+subscription.operators.coreos.com/update-service-subscription created
+----
+
+- Configure registry certificate to trusted store
+
+NOTE: If you have one configmap in the object proxy/cluster, you must only modify the ConfigMap.
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-registry-ca
+  namespace: openshift-config
+data:
+  updateservice-registry: |
+    -----BEGIN CERTIFICATE-----
+    MIIFKzCCAxOgAwIBAgIUOwRTWpPLn6/4nMepKoivyBNY2IIwDQYJKoZIhvcNAQEL
+    ...
+    HQTLljb0wWdsLQ8juGIGMA7WmKhoTaYXcs2lJ8W1C9ioZJMVJOtQCrVmJrfc25PR
+    jet5zqdfRDxalVS0nOI/qakkKoYnhoTyZuFuxicRAA==
+    -----END CERTIFICATE-----
+  registry.dsal..8443: |
+    -----BEGIN CERTIFICATE-----
+    MIIFKzCCAxOgAwIBAgIUOwRTWpPLn6/4nMepKoivyBNY2IIwDQYJKoZIhvcNAQEL
+    ...
+    HQTLljb0wWdsLQ8juGIGMA7WmKhoTaYXcs2lJ8W1C9ioZJMVJOtQCrVmJrfc25PR
+    jet5zqdfRDxalVS0nOI/qakkKoYnhoTyZuFuxicRAA==
+    -----END CERTIFICATE-----
+----
+
+- enable CA in proxy also (user-ca-bundle)
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc patch image.config.openshift.io/cluster --type=merge --patch='{"spec":{"additionalTrustedCA:":{"name":"my-registry-ca"}}}'
+----
+
+
+- Create graph update image (`10-update-service-dockerfile`)
+
+
+[.console-input]
+[source,txt]
+----
+include::example$10-update-service-dockerfile.txt[]
+----
+
+- Build and push:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman build -f ./10-update-service-dockerfile -t registry.dsal:8443/openshift/graph-data:latest
+----
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman push --authfile pull-secret-all.json registry.dsal:8443/openshift/graph-data:latest
+----
+
+- Create UpdateService object (`10-update-service-UpdateService.yaml`)
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$10-update-service-UpdateService.yaml[]
+----
+
+- and apply:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 10-update-service-UpdateService.yaml
+----
+
+- Now, update clusterVersion with graph url
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+POLICY_ENGINE_GRAPH_URI="$(oc -n "openshift-update-service" get -o jsonpath='{.status.policyEngineURI}/api/upgrades_info/v1/graph{"\n"}' updateservice "service")"
+
+oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge
+----
+
+as an alternative, if the update service is in the same cluster, using k8s service dns:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+POLICY_ENGINE_GRAPH_URI="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph"
+
+oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge
+----
+
+To check everything is working:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ oc get pod -n openshift-update-service
+NAME                                     READY   STATUS    RESTARTS   AGE
+service-86ff6b6df-82fn4                  2/2     Running   0          51m
+service-86ff6b6df-9fc7m                  2/2     Running   0          51m
+updateservice-operator-ccb64988d-f97v6   1/1     Running   0          17h
+
+$ oc adm upgrade
+Error while reconciling 4.11.20: the cluster operator insights has not yet successfully rolled out
+
+Upgradeable=False
+
+  Reason: MultipleReasons
+  Message: Cluster should not be upgraded between minor versions for multiple reasons: AdminAckRequired,InsightsNotUpgradeable
+  * Kubernetes 1.25 and therefore OpenShift 4.12 remove several APIs which require admin consideration. Please see the knowledge article https://access.redhat.com/articles/6955381 for details and instructions.
+  * Cluster operator insights should not be upgraded between minor versions: Unable to report: unable to build request to connect to Insights server: Post "https://console.redhat.com/api/ingress/v1/upload": dial tcp 84.53.185.163:443: i/o timeout
+
+Upstream: http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph
+Channel: stable-4.11 (available channels: candidate-4.11, candidate-4.12, fast-4.11, fast-4.12, stable-4.11)
+No updates available. You may force an upgrade to a specific release image, but doing so may not be supported and may result in downtime or data loss.
+----

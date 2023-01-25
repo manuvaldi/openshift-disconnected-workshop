@@ -1,0 +1,551 @@
+= Disconnected Catalogs and Operators
+include::_attributes.adoc[]
+
+A part from Openshift services, there are pods which are continuosly updating. There are the Operators Catalogs. These are pod where are defined the Operators that you can see, for example, in the Operator Hub.
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ oc get catalogsource -A
+NAMESPACE               NAME                  DISPLAY               TYPE   PUBLISHER   AGE
+openshift-marketplace   certified-operators   Certified Operators   grpc   Red Hat     17h
+openshift-marketplace   community-operators   Community Operators   grpc   Red Hat     17h
+openshift-marketplace   redhat-marketplace    Red Hat Marketplace   grpc   Red Hat     17h
+openshift-marketplace   redhat-operators      Red Hat Operators     grpc   Red Hat     17h
+----
+
+Before these catalogs/pods were sqlite-based catalogs. A sqlite database storaged all information about Operators, Channels, Versions, dependencies,... Now in 4.11+ the sqlite database has been replaced by a file base. All methods we had to create new custom catalogs it's not valid (opm, for example). Following, the options we have in a disconnected installation:
+
+There are 3 options for catalogs in disconnected:
+
+. Default catalogs with images mirrored and ImageContentSourcePolicy
+. Default catalogs with images mirrored and Custom catalogs
+. Custom catalog
+
+But apart from the catalogs themself, we would need the images that Operators need to get run. Here, nowadays we have 2 options for mirroring of images from operators.
+
+. with command oc
+. with oc-mirror
+
+Firstly, the Catalogs Sources:
+
+[#catalogs]
+== Disconnected Catalogs
+
+If you check the operator catalogs pods in your cluster you will see:
+
+[.console-output]
+----
+$ oc get pod -n openshift-marketplace
+NAME                                    READY   STATUS             RESTARTS   AGE
+certified-operators-dh7kf               0/1     ImagePullBackOff   0          20h
+certified-operators-f5xcm               0/1     ImagePullBackOff   0          18h
+community-operators-6lw8k               0/1     ImagePullBackOff   0          20h
+community-operators-jrdl4               0/1     ImagePullBackOff   0          18h
+marketplace-operator-7696c9454c-b4zwl   1/1     Running            2          18h
+----
+
+All pods are in `ImagePullBackOff` status. Let's see how to solve it:
+
+[#defaultmirrored]
+===  Default catalogs with images mirrored and `ImageContentSourcePolicy`
+
+These option is based on mirroring of catalog images and then use a `ImageContentSourcePolicy` object:
+
+- Mirror catalogs images using `oc-mirror`. Create a imageset file (`7-imageset-config-catalogs.yaml`):
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$7-imageset-config-catalogs.yaml[]
+----
+
+- Run mirror command
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc-mirror --config=./7-imageset-config-catalogs.yaml  docker://registry.dsal:8443/mirror
+----
+
+- Create a new registry.conf file because these images references are tags instead of digest:
+
+[.console-input]
+[source,txt]
+----
+[[registry]]
+  prefix = ""
+  location = "registry.redhat.io/redhat"
+  mirror-by-digest-only = false
+
+[[registry.mirror]]
+location = "registry.dsal:8443/mirror/redhat"
+----
+
+- Get base64 from this file:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+cat registry-conf-operators.txt | base64 -w0
+----
+
+[.console-input]
+----
+W1tyZWdpc3RyeV1dCiAgcHJlZml4ID0gIiIKICBsb2NhdGlvbiA9ICJyZWdpc3RyeS5yZWRoYXQuaW8vcmVkaGF0IgogIG1pcnJvci1ieS1kaWdlc3Qtb25seSA9IGZhbHNlCgpbW3JlZ2lzdHJ5Lm1pcnJvcl1dCmxvY2F0aW9uID0gInJlZ2lzdHJ5LmRzYWw6ODQ0My9taXJyb3IvcmVkaGF0Igo=
+----
+
+- Create machine-config file `7-mc-99-operators-registries.yaml`:
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$7-mc-99-operators-registries.yaml[]
+----
+
+- and apply it
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 7-mc-99-operators-registries.yaml
+----
+
+Now, wait for MachineConfigPool to be updated in all nodes and:
+
+- Delete pods from openshift-markeplace namespace to force update
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc delete --all pods -n openshift-marketplace
+----
+
+Wait some seconds to see pod running again:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+oc get pod -n openshift-marketplace
+NAME                                    READY   STATUS    RESTARTS   AGE
+certified-operators-fg98d               1/1     Running   0          15s
+community-operators-qf9jm               1/1     Running   0          15s
+marketplace-operator-6f9748c96f-bwlkq   1/1     Running   0          17s
+redhat-marketplace-nb7hw                1/1     Running   0          14s
+redhat-operators-qx9rd                  1/1     Running   0          14s
+----
+
+[#defaultmirrroredcustomcatalogs]
+=== Default catalogs with images mirrored and Custom catalogs
+
+The second method would be creating custom catalogs following next steps:
+
+- Disable default catalogs:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc patch OperatorHub cluster --type json \
+    -p '[{"op": "add", "path": "/spec/disableAllDefaultSources", "value": true}]'
+----
+
+- Create new catalogs files `7-default-catalogsources.yaml`, just replacing public images for mirrored images in `registry.dsal:8443/mirror` registry:
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$7-default-catalogsources.yaml[]
+----
+
+- and then apply:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 7-default-catalogsources.yaml
+----
+
+Now, we can see our custom catalogs based on default catalogs running:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ oc get pod -n openshift-marketplace
+NAME                                    READY   STATUS    RESTARTS   AGE
+marketplace-operator-6f9748c96f-bwlkq   1/1     Running   0          10m
+mirror-certified-operators-6dnw9        1/1     Running   0          71s
+mirror-community-operators-cx84l        1/1     Running   0          71s
+mirror-redhat-marketplace-ct22n         1/1     Running   0          71s
+mirror-redhat-operators-4n2q8           1/1     Running   0          71s
+----
+
+NOTE: Take note our catalogs have prefix `mirror-*`
+
+[#customcatalog]
+=== Custom catalog
+
+The above 2 methods allow us to have all operators available as we have in a connected installation, but the third options would be creating our custom catalog containing only the operators we wish.
+
+Now catalogs are file-based catalogs instead of sqlite-based catalogs, so most of the command from opm don't work. To create a custom catalog follow next steps:
+
+- Create catalog index dir
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+rm -Rf custom-catalog; mkdir -p custom-catalog/configs
+----
+
+- Extract render index from public image of a public catalog, in our case, the "redhat-operator" catalog index:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+opm render registry.redhat.io/redhat/redhat-operator-index:v4.11 > redhat-operator-index.json
+----
+
+[NOTE]
+====
+if you have space problems in /tmp you can try to extend /tmp LV
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"] 
+----
+lvresize --resizefs -L+5G rootvg/tmplv
+----
+==== 
+
+- Now we will filter operators from the rendered json extracted from catalog executing an script. These is the list of operators:
+
+** elasticsearch-operator
+** cluster-logging
+** cincinnati-operator
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+operators="elasticsearch-operator cluster-logging cincinnati-operator"
+echo "" > custom-catalog/configs/index.json
+for operator in $operators; do
+  cat redhat-operator-index.json | jq --arg operator "$operator" 'select( .package == $operator or .name == $operator)' >> custom-catalog/configs/index.json
+done
+----
+
+or as an alternative script:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+operators="elasticsearch-operator cluster-logging cincinnati-operator"
+echo "" > custom-catalog/configs/index.json
+for operator in $operators; do
+  mkdir -p custom-catalog/configs/$operator
+  cat redhat-operator-index.json | jq --arg operator "$operator" 'select( .package == $operator or .name == $operator)' >> custom-catalog/configs/$operator/catalog.json
+done
+----
+
+- Now, we generate the dockerfile of our catalog image
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+opm generate dockerfile custom-catalog/configs
+----
+
+- Build catalog image
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+cd custom-catalog
+podman build -t registry.dsal:8443/mirror/redhat/custom-redhat-operator-index:v1 -f configs.Dockerfile
+----
+
+- And now, push the catalog image to our registry
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman push --tls-verify=false \
+  --authfile ~/pull-secret-all.json \
+  registry.dsal:8443/mirror/redhat/custom-redhat-operator-index:v1
+----
+
+- Delete all catalogs (we had our mirror-* catalogs)
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc delete catalogsources --all -n openshift-marketplace
+----
+
+- Create catalogsource `7-custom-catalogsource.yaml`
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$7-custom-catalogsource.yaml[]
+----
+
+- and apply it
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f  7-custom-catalogsource.yaml
+----
+
+Now we can see running our pod, catalog and only our operators selected
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ oc get pod -n openshift-marketplace
+NAME                                    READY   STATUS    RESTARTS   AGE
+custom-redhat-operators-82z9h           1/1     Running   0          59s
+marketplace-operator-6f9748c96f-bwlkq   1/1     Running   0          44m
+
+$ oc get catalogsource -n openshift-marketplace
+NAME                      DISPLAY                    TYPE   PUBLISHER   AGE
+custom-redhat-operators   Custom Red Hat Operators   grpc   Custom      71s
+
+$ oc get packagemanifest -n openshift-marketplace
+NAME                          CATALOG                    AGE
+elasticsearch-operator        Custom Red Hat Operators   91s
+cluster-logging               Custom Red Hat Operators   91s
+cincinnati-operator           Custom Red Hat Operators   91s
+----
+
+
+[#operators]
+== Disconnected Operators
+
+Now we have our catalog running in our cluster, and operators "available" to be installed, but we need images neeeded by those operators to be deployed, installed and instanced. Those images are:
+
+- The bundle image
+- Images used by operator to give that service
+
+We have 2 methods:
+
+[#mirroringoc]
+=== Mirroring with `oc`
+
+This method, nowadays only works with the default catalog index. With custom index you must use `oc-mirror`.
+
+We are NOT going to mirror all images of a public catalog (we don't have enough space), but we can see the manifest (`--manifest-only` parameter) to understand the process:
+
+Execute command and explore directory mapping.txt and ImageContentSourcePolicy file:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc adm catalog mirror --dry-run --manifests-only registry.redhat.io/redhat/redhat-operator-index:v4.11 registry.dsal:8443/mirror/redhat
+----
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+src image has index label for declarative configs path: /configs/
+using index path mapping: /configs/:/tmp/3682376003
+W0118 10:50:52.582735 1061475 manifest.go:449] Chose linux/amd64 manifest from the manifest list.
+wrote declarative configs to /tmp/3682376003
+using declarative configs at: /tmp/3682376003
+no digest mapping available for registry.redhat.io/redhat/redhat-operator-index:v4.11, skip writing to ImageContentSourcePolicy
+wrote mirroring manifests to manifests-redhat-operator-index-1674039050
+deleted dir /tmp/3682376003
+----
+
+The result:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ ls -la manifests-redhat-operator-index-1674039050
+total 1384
+drwxr-xr-x.  2 root root      88 Jan 18 10:51 .
+dr-xr-x---. 10 root root    4096 Jan 18 10:50 ..
+-rwxr-xr-x.  1 root root     239 Jan 18 10:51 catalogSource.yaml
+-rwxr-xr-x.  1 root root  128126 Jan 18 10:51 imageContentSourcePolicy.yaml
+-rw-r--r--.  1 root root 1275736 Jan 18 10:51 mapping.txt
+----
+
+The result is:
+
+- A `catalogsource` to import in our cluster
+- A `ImageContentSourcePolicy` to say our cluster where are the images
+- A `mapping.txt` in format compatible to mirror with the command "oc mirror"
+
+
+[#mirroringocmirror]
+=== Mirroring with `oc-mirror`
+
+We have 2 options:
+
+- Mirroring with our custom catalog image already filtered with the operators wished.
+- Mirroring with the public catalog image filtering with the imageset syntax
+
+[#imagesetcustomcatalog]
+==== **ImageSet for custom catalog index**
+
+- Create imageset config file `7-imageset-mirroring-custom-catalog.yaml`:
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$7-imageset-mirroring-custom-catalog.yaml[]
+----
+
+NOTE: we need to specify in the config the source of our custom catalog with the parameter `originalRef`
+
+
+- Run mirror
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc-mirror --continue-on-error --config=./7-imageset-mirroring-custom-catalog.yaml  docker://registry.dsal:8443/mirror
+----
+
+It takes some time, be patient.
+
+The result is:
+
+- Operators from custom catalog images mirrored
+- An ImageContentSourcePolicy file to import into the cluster (`oc-mirror-workspace/results-xxxx/imageContentSourcePolicy.yaml`)
+- A catalogsource with a copy of our catalogsource (`oc-mirror-workspace/results-xxxx/catalogSource-redhat-custom-redhat-operator-index.yaml`)
+- A `mapping.txt` with the list of images mirrored (`oc-mirror-workspace/results-xxxx/mapping.txt`)
+
+We are not going to configure the mirroring in the cluster yet. We will do it later, in the next section.
+
+[#imagesetfiltered]
+==== **ImageSet for official catalog filtered**
+
+The second method is using the feature of `oc-mirror` to filter operators of a default/official index, and mirror images of them.
+
+- Create imageset config file `7-imageset-mirroring-default-catalog.yaml`:
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$7-imageset-mirroring-default-catalog.yaml[]
+----
+
+NOTE: If you did already the upgrade of the first cluster you can delete the section of mirroring releases 4.9.10 and 4.9.22
+
+- Run oc-mirror:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc-mirror --continue-on-error --config=./7-imageset-mirroring-default-catalog.yaml docker://registry.dsal:8443/mirror
+----
+
+[.console-output]
+----
+.........
+.........
+info: Mirroring completed in 2.26s (0B/s)
+Rendering catalog image "registry.dsal:8443/mirror/redhat/redhat-operator-index:v4.11" with file-based catalog
+Writing image mapping to oc-mirror-workspace/results-1674048845/mapping.txt
+Writing CatalogSource manifests to oc-mirror-workspace/results-1674048845
+Writing ICSP manifests to oc-mirror-workspace/results-1674048845
+----
+
+The result would be:
+
+- Operators images mirrored
+- An ImageContentSourcePolicy file to import into the cluster (`oc-mirror-workspace/results-xxxx/imageContentSourcePolicy.yaml`)
+- A Catalogsource (`oc-mirror-workspace/results-xxxx/catalogSource-redhat-custom-redhat-operator-index.yaml`)
+- A `mapping.txt` with the list of images mirrored (`oc-mirror-workspace/results-xxxx/mapping.txt`)
+
+
+Now we are going to remove all catalogs configured in the cluster, import this new created by `oc-mirror` and import the ImageContentSourcePolicy object.
+
+- Delete current configured catalog source:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc delete catalogsource --all -n openshift-marketplace
+----
+
+- Import all object in the folder specified in the output of the `oc-mirror` execution
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f oc-mirror-workspace/results-1674048845
+----
+
+[.console-output]
+----
+catalogsource.operators.coreos.com/redhat-operator-index created
+imagecontentsourcepolicy.operator.openshift.io/operator-0 created
+imagecontentsourcepolicy.operator.openshift.io/release-0 created
+----
+
+The result of all:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ oc get pod,catalogsources,packagemanifest,imagecontentsourcepolicy -n openshift-marketplace
+NAME                                        READY   STATUS    RESTARTS   AGE
+pod/marketplace-operator-6f9748c96f-bwlkq   1/1     Running   0          3h38m
+pod/redhat-operator-index-5vp2s             1/1     Running   0          2m25s
+
+NAME                                                       DISPLAY   TYPE   PUBLISHER   AGE
+catalogsource.operators.coreos.com/redhat-operator-index             grpc               2m25s
+
+NAME                                                                   CATALOG   AGE
+packagemanifest.packages.operators.coreos.com/cincinnati-operator                2m25s
+packagemanifest.packages.operators.coreos.com/elasticsearch-operator             2m25s
+packagemanifest.packages.operators.coreos.com/cluster-logging                    2m25s
+
+NAME                                                            AGE
+imagecontentsourcepolicy.operator.openshift.io/image-policy-0   21h
+imagecontentsourcepolicy.operator.openshift.io/image-policy-1   21h
+imagecontentsourcepolicy.operator.openshift.io/operator-0       2m25s
+imagecontentsourcepolicy.operator.openshift.io/release-0        2m25s
+----
+
+NOTE: For more detail and stay curious take a look to the files generated by `oc-mirror` command
+
+To test all, we will install Openshift Logging Operator and ElasticSearch Operator.
+
+- Create a yaml file `7-operator-openshift-logging.yaml`
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$7-operator-openshift-logging.yaml[]
+----
+
+- and apply it
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 7-operator-openshift-logging.yaml
+----
+
+After some time, operator will be installed
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ oc get clusterserviceversions -n openshift-logging
+NAME                           DISPLAY                            VERSION   REPLACES   PHASE
+cluster-logging.5.5.5          Red Hat OpenShift Logging          5.5.5                Succeeded
+elasticsearch-operator.5.3.9   OpenShift Elasticsearch Operator   5.3.9                Succeeded
+
+$ oc get pod -n openshift-operators-redhat
+NAME                                      READY   STATUS    RESTARTS   AGE
+elasticsearch-operator-7685d767d9-jzd85   2/2     Running   0          3m17s
+
+$ oc get pod -n openshift-logging
+NAME                                      READY   STATUS    RESTARTS   AGE
+cluster-logging-operator-ddd4f964-xrdzt   1/1     Running   0          5m22s
+----
+
+We are not going to install a instance of openshift-logging for capacity reasons :)

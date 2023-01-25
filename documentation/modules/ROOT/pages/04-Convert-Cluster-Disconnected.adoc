@@ -1,0 +1,236 @@
+= Convert Cluster to disconnected
+include::_attributes.adoc[]
+
+We have 4 registries:
+
+- A registry v2 with 4.9.10 in registry.dsal:5000
+- A registry mirror-registry method with 4.9.10 and 4.9.22 in registry.dsal:8443
+- A registry cache with a minimal/basic Quay deployment in registry.dsal (443)
+- A registry cache with a registry-cache in registry.dsal:6443
+
+We are going to upgrade the cluster in this order:
+
+4.9.10 -> 4.9.22 -> 4.10.20 -> 4.11.20
+
+We will use the different registries to get available the images for the cluster. But first of all we will "disconnect" our cluster.
+
+[#importca]
+== Import CA certificates
+
+(Following this procedure https://docs.openshift.com/container-platform/4.11/cicd/builds/setting-up-trusted-ca.html)
+
+- Copy registry ca cert into your machine as `ca.crt`
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+kcli scp registry:/data/registry/certs/registry.crt .
+mv registry.crt ca.crt
+----
+
+- Create configmap with the ca certificates for every registry (the same in our case)
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc create configmap registry-cas -n openshift-config \
+--from-file=registry.dsal..5000=ca.crt \
+--from-file=registry.dsal..8443=ca.crt \
+--from-file=registry.dsal=ca.crt \
+--from-file=registry.dsal..6443=ca.crt
+----
+
+- Enable additional trusted ca:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc patch image.config.openshift.io/cluster --patch '{"spec":{"additionalTrustedCA":{"name":"registry-cas"}}}' --type=merge
+----
+
+[#configuremirrors]
+== Configure mirrors in the cluster
+
+A kcli openshift deployment runs some custom pods. `ImageContentSourcePolicy` object only allows digest references for images. Kcli pods use tags instead of digest. To be able to have an usable cluster we need to create a machine-config file to specify mirror configure for no only digest. So, following these steps (https://access.redhat.com/solutions/4817401):
+
+- Create a registry.conf file (remember we mirror those images in the mirroring section ):
+
+[.console-input]
+[source,txt]
+----
+[[registry]]
+  prefix = ""
+  location = "quay.io/karmab"
+  mirror-by-digest-only = false
+
+[[registry.mirror]]
+location = "registry.dsal:5000/karmab"
+
+[[registry.mirror]]
+location = "registry.dsal:8443/karmab"
+
+----
+
+- get base64 from this file:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+cat registry.conf.file | base64 -w0
+----
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+W1tyZWdpc3RyeV1dCiAgcHJlZml4ID0gIiIKICBsb2NhdGlvbiA9ICJxdWF5LmlvL2thcm1hYiIKICBtaXJyb3ItYnktZGlnZXN0LW9ubHkgPSBmYWxzZQoKW1tyZWdpc3RyeS5taXJyb3JdXQpsb2NhdGlvbiA9ICJyZWdpc3RyeS5kc2FsOjUwMDAva2FybWFiIgoKW1tyZWdpc3RyeS5taXJyb3JdXQpsb2NhdGlvbiA9ICJyZWdpc3RyeS5kc2FsOjg0NDMva2FybWFiIgo=
+----
+
+- create machine-config file (`4-mc-99-karmab-registries.yaml`):
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$4-mc-99-karmab-registries.yaml[]
+----
+
+- and apply
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 4-mc-99-karmab-registries.yaml
+----
+
+NOTE: This operation takes some time because our SNO cluster needs to restart the node. Wait for the cluster to be available to continue.
+
+- Now we will create the imagecontentsourcepolicy object (`4-icsp-registry-v2-5000.yaml`)
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$4-icsp-registry-v2-5000.yaml[]
+----
+
+- and apply:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 4-icsp-registry-v2-5000.yaml
+----
+
+Now, you can check config directly in the node:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ oc debug node/lab-test-ctlplane-0.lab.dsal  -- chroot /host bash -c 'podman info'
+Starting pod/lab-test-ctlplane-0labdsal-debug ...
+To use host binaries, run `chroot /host`
+host:
+  arch: amd64
+  buildahVersion: 1.21.3
+....
+registries:
+  quay.io/karmab:
+    Blocked: false
+    Insecure: false
+    Location: quay.io/karmab
+    MirrorByDigestOnly: false
+    Mirrors:
+    - Insecure: false
+      Location: registry.dsal:5000/karmab
+    Prefix: quay.io/karmab
+  quay.io/openshift-release-dev/ocp-release:
+    Blocked: false
+    Insecure: false
+    Location: quay.io/openshift-release-dev/ocp-release
+    MirrorByDigestOnly: true
+    Mirrors:
+    - Insecure: false
+      Location: registry.dsal:5000/ocp4
+    Prefix: quay.io/openshift-release-dev/ocp-release
+  quay.io/openshift-release-dev/ocp-v4.0-art-dev:
+    Blocked: false
+    Insecure: false
+    Location: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+    MirrorByDigestOnly: true
+    Mirrors:
+    - Insecure: false
+      Location: registry.dsal:5000/ocp4
+    Prefix: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+  search:
+  - registry.access.redhat.com
+  - docker.io
+....
+----
+
+
+[#updatepullsecret]
+== Update global pull secret
+
+Our OCP will need the credentials/pull-secret to be able to access to the images from registries. (Following https://docs.openshift.com/container-platform/4.11/updating/updating-restricted-network-cluster.html#images-update-global-pull-secret_updating-restricted-network-cluster)
+
+- Change pull secret with our `pull-secret-all.yaml`
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=./pull-secret-all.json
+----
+
+
+[#isolatecluster]
+== Isolate the cluster
+
+To block internet and isolated cluster (outgoings connections), follow next steps from the hypervisor machine:
+
+- Drop traffic from libvirtd network:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+iptables -I FORWARD -s 192.168.122.0/24  -j DROP
+----
+
+[NOTE]
+====
+To recover internet:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+iptables -D FORWARD -s 192.168.122.0/24  -j DROP
+----
+====
+
+- Because we have 2 registries in cache mode, we will allow the registry VM access to Internet, so open the traffic for it:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+iptables -I FORWARD -s 192.168.122.22/32  -j ACCEPT
+----
+
+
+[#reboot]
+== Reboot node and check registry logs
+
+To check if our cluster is disconnected we will stop and start the SNO VM:
+
+Let's test our disconnected cluster!
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+kcli stop vm lab-test-ctlplane-0
+kcli start vm lab-test-ctlplane-0
+----
+
+you can check registry logs to watch how images are requested from OCP (from registry VM):
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman logs --tail 10 -f ocp-registry
+----

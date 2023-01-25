@@ -2,9 +2,9 @@ runtime:
   cache_dir: ./.cache/antora
 
 site:
-  title: Template Tutorial
-  url: https://redhat-scholars.github.io/course-template
-  start_page: template-tutorial::index.adoc
+  title: OCP Disconnected Workshop
+  url: https://manuvaldi.github.io/openshift-disconnected-workshop
+  start_page: openshift-disconnected-workshop::index.adoc
 
 content:
   sources:

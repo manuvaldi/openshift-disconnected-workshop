@@ -1,0 +1,7 @@
+= Preparation Notes =
+
+- For each user, create an "Standard D16ads v5 (16 vcpus, 64 GiB memory)" in an Azure environment, with OS RHEL 8.6
+
+- As an alternative an HW o VM with similar sizing
+
+- Important to have around 370-400GB od disk space 

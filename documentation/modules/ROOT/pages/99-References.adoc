@@ -1,0 +1,10 @@
+= References 
+include::_attributes.adoc[]
+
+- File-based Catalogs - https://olm.operatorframework.io/docs/reference/file-based-catalogs/
+
+- Prune a file-based catalog example - https://github.com/redhat-openshift-ecosystem/community-operators-prod/issues/793#issuecomment-1036213702
+
+- KCS5891131 - "Upgrade process fails in Openshift Container Platform 4 because the Ingress Operator failed: CanaryChecksRepetitiveFailures" - https://access.redhat.com/solutions/5891131
+
+- Disconnected Insight - https://docs.openshift.com/container-platform/4.11/support/remote_health_monitoring/remote-health-reporting-from-restricted-network.html

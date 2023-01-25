@@ -1,0 +1,163 @@
+= Disconnected Upgrades
+include::_attributes.adoc[]
+
+Now, we have our cluster disconnected. Now we will upgrade using the different registry types deployed in previous sections:
+
+4 registries:
+
+- A registry v2 with 4.9.10 in registry.dsal:5000
+- A registry mirror-registry method with 4.9.10 and 4.9.22 in registry.dsal:8443
+- A registry cache with a minimal/basic Quay deployment in registry.dsal (443). it can cache any release of Openshift. We will use it for 4.10.20 release.
+- A registry cache with a registry-cache in registry.dsal:6443. It can cache any release of Openshift. We will use it for 4.11.20 release.
+
+So, we are going to upgrade the cluster in this order:
+
+4.9.10 -> 4.9.22 -> 4.10.20 -> 4.11.20
+
+
+[#upgrade1]
+== Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)
+
+Our 4.9.22 release images are in the registry (mirror-registry) at url `registry.dsal:8443`
+
+- Create new `ImageContentSourcePolicy` (`5-icsp-registry-mirror-8443.yaml`)
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$5-icsp-registry-mirror-8443.yaml[]
+----
+
+- and apply
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 5-icsp-registry-mirror-8443.yaml
+----
+
+NOTE: don't worry for applying different `ImageContentSourcePolicy` objects in the cluster. The configuration is incremental. If an image isn't found in a mirror, the engine tries in the next mirror registry configured.
+
+
+- Upgrade cluster from 4.9.10 to 4.9.22
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc adm upgrade --to-image=registry.dsal:8443/mirror/openshift/release-images:4.9.22-x86_64 --force --allow-explicit-upgrade
+----
+
+- Check registry logs to watch if cluster is requesting image to the registry
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman logs --tail=10 -f quay-app
+----
+
+- You can monitor the upgrade from CLI:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc get clusterversion; oc get co
+----
+
+Wait until all `ClusterOperators` are available and ready
+
+
+[#upgrade2]
+== Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)
+
+In this upgrade we will use our basic/mini Quay deployment acting as registry cache in url `registry.dsal(:443)`. Follow the next steps to upgrade:
+
+- Create the new `ImageContentSourcePolicy` (`5-icsp-registry-cache-443.yaml`)
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$5-icsp-registry-cache-443.yaml[]
+----
+
+- and apply
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 5-icsp-registry-mirror-443.yaml
+----
+
+- Upgrade cluster from 4.9.22 to 4.10.20
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc adm upgrade --to-image=registry.dsal/cache-quayio/openshift-release-dev/ocp-release:4.10.20-x86_64 --force --allow-explicit-upgrade
+----
+
+- check registry logs
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman logs --tail=10 -f quay-standalone-basic
+----
+
+- Check clusteroperators
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc get co
+----
+
+[#upgrade3]
+== Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)
+
+- Apply new ImageContentSourcePolicy `5-icsp-registry-cache-6443.yaml`
+
+[.console-input]
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$5-icsp-registry-cache-6443.yaml[]
+----
+
+- and apply
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc apply -f 5-icsp-registry-cache-6443.yaml
+----
+
+- Delete ImageContentSourcePolicy from quay basic cache, to force use new registry cache.
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc delete ImageContentSourcePolicy icsp-quay-cache-443
+----
+
+- Upgrade cluster from 4.10.20 to 4.11.20 allocated in registry-mirror
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc adm upgrade --to-image=registry.dsal:6443/quay.io/openshift-release-dev/ocp-release:4.11.20-x86_64 --force --allow-explicit-upgrade
+----
+
+- Check registry logs
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+podman logs --tail=10 -f quay-app
+----
+
+- Check clusteroperators
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc get co
+----

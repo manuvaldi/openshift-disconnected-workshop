@@ -1,0 +1,9 @@
+apiVersion: updateservice.operator.openshift.io/v1
+kind: UpdateService
+metadata:
+  name: service
+  namespace: openshift-update-service
+spec:
+  replicas: 2
+  graphDataImage: registry.dsal:8443/openshift/graph-data:latest
+  releases: registry.dsal:8443/mirror/openshift/release-images

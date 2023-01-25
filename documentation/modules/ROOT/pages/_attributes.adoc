@@ -1,2 +1,3 @@
 :experimental:
 :source-highlighter: highlightjs
+:github-repo: https://github.com/manuvaldi/openshift-disconnected-workshop/blob/{branch}

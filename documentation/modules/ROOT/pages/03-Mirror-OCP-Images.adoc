@@ -1,0 +1,110 @@
+= Mirror Openshift Images
+include::_attributes.adoc[]
+
+We will mirror OCP images to
+- From OCP release **4.9.10** to the registry v2 in `registry.dsal:5000`
+- From OCP release **4.9.10** and **4.9.22** to the registry mirror-registry in `registry.dsal:8443`
+
+
+
+There 2 official methods to mirror images to a registry:
+
+- Normal method with `oc` binary
+- New method with `oc-mirror` plugin
+
+[#mirroroc]
+== Mirror with oc binary
+
+From the Hypervisor machine with root user.
+
+- Import certificate from registry VM to Hypervisor for avoid certificated x509 problems
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+kcli scp registry:/data/registry/certs/registry.crt .
+cp registry.crt /etc/pki/ca-trust/source/anchors/
+update-ca-trust
+rm -Rf registry.crt
+----
+
+- Run this commands:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+OCP_RELEASE=4.9.10
+LOCAL_REGISTRY='registry.dsal:5000'
+LOCAL_REPOSITORY='ocp4'
+PRODUCT_REPO='openshift-release-dev'
+LOCAL_SECRET_JSON='/root/pull-secret-all.json'
+RELEASE_NAME="ocp-release"
+ARCHITECTURE=x86_64
+oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}
+----
+
+
+- A OCP kcli-deployment run some custom pods. To be able to run in a disconnected environment we need to mirror de kcli images:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/curl:latest registry.dsal:5000/karmab/curl:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-coredns:latest registry.dsal:5000/karmab/origin-coredns:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/haproxy:latest registry.dsal:5000/karmab/haproxy:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-keepalived-ipfailover:latest registry.dsal:5000/karmab/origin-keepalived-ipfailover:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/mdns-publisher:latest registry.dsal:5000/karmab/mdns-publisher:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kubectl:latest registry.dsal:5000/karmab/kubectl:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kcli:latest registry.dsal:5000/karmab/kcli:latest
+----
+
+[#mirrorocmirror]
+== Mirror with oc-mirror binary
+
+From the Hypervisor machine:
+
+- Download binary `oc-mirror`
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/oc-mirror.tar.gz
+tar xvfz oc-mirror.tar.gz
+cp oc-mirror /usr/local/bin/
+chmod +x /usr/local/bin/oc-mirror
+----
+
+NOTE: use latest version because problems with custom catalog sources
+
+- Copy auth to docker directory
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+mkdir -p ~/.docker && cp pull-secret-all.json ~/.docker/config.json
+----
+
+- Init image set config file
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc-mirror init --registry registry.dsal:5000/mirror > 3-imageset-config.yaml
+----
+
+- Or directly you can create/edit the file `3-imageset-config.yaml`
+
+[source,yaml,subs="+macros,+attributes"]
+----
+include::example$3-imageset-config.yaml[]
+----
+
+- Run mirror
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc-mirror --config=./3-imageset-config.yaml  docker://registry.dsal:8443/mirror
+----
+
+If you wish you can browse the Web UI in the port `8443` and watch images mirrored

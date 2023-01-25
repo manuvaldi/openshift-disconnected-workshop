@@ -1,0 +1,12 @@
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: icsp-registry-v2-5000
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - registry.dsal:5000/ocp4
+    source: quay.io/openshift-release-dev/ocp-release
+  - mirrors:
+    - registry.dsal:5000/ocp4
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev

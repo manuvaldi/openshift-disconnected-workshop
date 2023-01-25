@@ -1,0 +1,51 @@
+= Cluster Samples Operator in Disconnected
+include::_attributes.adoc[]
+
+In a disconnected environment, the samples operator is `Removed`. To be able to get available the samples, and change to `Managed`, we need to mirror and change these images:
+
+The images to mirror are in a configmap in Openshift:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc get cm -n openshift-cluster-samples-operator imagestreamtag-to-image -o yaml
+----
+
+Steps:
+
+- Create a mapping.txt with this script (`9-samples-mirroring.sh`):
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+include::example$9-samples-mirroring.sh[]
+----
+
+you can execute it like this:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+sh 9-samples-mirroring.sh ~/pull-secret-all.json
+----
+
+- Mirror with oc (or oc-mirror if you wish, you know how to do it ;) )
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc image mirror --skip-multiple-scopes=true --continue-on-error --insecure=true -a ./pull-secret-all.json -f mapping.txt
+----
+
+- Import CA from regitry
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+oc create configmap custom-ca-registry --from-file=registry.dsal..8443=ca.crt -n openshift-config
+configmap/custom-ca-registry created
+
+oc patch image.config.openshift.io/cluster --patch '{"spec":{"additionalTrustedCA":{"name":"custom-ca-registry"}}}' --type=merge
+----
+
+Now, you can see the samples in the Developer Console.
