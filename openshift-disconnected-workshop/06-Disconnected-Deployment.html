@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Disconnected deployment :: OCP Disconnected Workshop</title>
+    <link rel="canonical" href="https://manuvaldi.github.io/openshift-disconnected-workshop/openshift-disconnected-workshop/06-Disconnected-Deployment.html">
+    <link rel="prev" href="05-Disconnected-Upgrades.html">
+    <link rel="next" href="07-Disconnected-Operators.html">
+    <meta name="generator" content="Antora 3.0.0">
+    <link rel="stylesheet" href="../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://developers.redhat.com" target="_blank"><img src="../_/img/NewRHDFullLogo_4-color_white-wordmark.png" height="40px" alt="Red Hat Developer Program"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="https://manuvaldi.github.io/openshift-disconnected-workshop">OCP Disconnected Workshop</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://developers.redhat.com/ebooks/" target="_blank">Books</a>
+        <a class="navbar-item" href="https://developers.redhat.com/cheatsheets/" target="_blank">Cheat Sheets</a>
+        <a class="navbar-item" href="https://developers.redhat.com/events/" target="_blank">Upcoming Events</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">More Tutorials</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/kubernetes-tutorial/" target="_blank">Kubernetes</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/istio-tutorial/" target="_blank">Istio</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/quarkus-tutorial/" target="_blank">Quarkus</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/knative-tutorial/" target="_blank">Knative</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/tekton-tutorial/" target="_blank">Tekton</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="openshift-disconnected-workshop" data-version="master">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html"></a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html">Setup</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#prerequisite">Prerequisites</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#prerequisite-binaries">kcli and binaries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#presequisites-sshuttle">sshuttle</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#registryvm">Registry VM</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-registryv2">Create registry with registry:v2 image (classic)</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-mirror-registry">Create registry with mirror-registry</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-quay-standalone">Create Registry Quay standalone with proxy cache/mirror functionality</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-cachecontainer">Creating Registry Cache with registry-cache container</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="01-Setup.html#testing-registries">Testing registries</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="02-Deploy-Cluster.html">Cluster Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="03-Mirror-OCP-Images.html">Mirroring Openshift Images</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirroroc">Mirror with oc binary</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirrorocmirror">Mirror with oc-mirror binary</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html">Convert Cluster to disconnected</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#importca">Import CA certificates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#configuremirrors">Configure mirrors in the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#updatepullsecret">Update global pull secret</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#isolatecluster">Isolate the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#reboot">Reboot node and check registry logs</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade1">Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade2">Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade3">Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="06-Disconnected-Deployment.html">Disconnected Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html">Disconnected Catalogs and Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#catalogs">Disconnected Catalogs</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrored">Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrroredcustomcatalogs">Default catalogs with images mirrored and Custom catalogs</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#customcatalog">Custom catalog</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#operators">Disconnected Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringoc">Mirroring with <code>oc</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringocmirror">Mirroring with <code>oc-mirror</code></a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetcustomcatalog">ImageSet for custom catalog index</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetfiltered">ImageSet for official catalog filtered</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html">Insights and Telemetry services</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insights">Insights</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#disableinsights">Disable Insights</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insightsmanualupload">Manual upload</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetry">Telemetry client</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetrymanualupload">Manual Upload</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="09-Cluster-Samples.html">Cluster Samples Operator</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="10-Openshift-Update-Service.html">Openshift Update Service</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="11-Proxy.html">Cluster-wide Proxy</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="99-References.html">References</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Openshift Disconnected Workshop</a></li>
+    <li><a href="06-Disconnected-Deployment.html">Disconnected Deployment</a></li>
+  </ul>
+</nav>
+  <div class="edit-this-page"><a href="https://github.com/manuvaldi/openshift-disconnected-workshop/edit/master/documentation/modules/ROOT/pages/06-Disconnected-Deployment.adoc">Edit this Page</a></div>
+  </div>
+  <div class="content">
+<article class="doc">
+<h1 class="page">Disconnected deployment</h1>
+<div class="paragraph">
+<p>We will mirror 4.11.20 Openshift release images in registry-mirror (8443), so create imageset config file <code>6-imageset-config.yaml</code></p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+archiveSize: 1
+storageConfig:
+  registry:
+    imageURL: registry.dsal:8443/imagetset/mirror:metadata
+    skipTLS: true
+mirror:
+  platform:
+    channels:
+    - name: stable-4.10
+      type: ocp
+      minVersion: 4.9.10
+      maxVersion: 4.9.22
+      shortestPath: true
+    - name: stable-4.11
+      type: ocp
+      minVersion: 4.11.20
+      maxVersion: 4.11.20
+      shortestPath: true
+    architectures:
+    - amd64</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Run mirror</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc-mirror --config=./6-imageset-config.yaml  docker://registry.dsal:8443/mirror</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Copy release image to releases repository (kcli requirements reason):</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc image mirror -a ~/pull-secret-all.json \
+  registry.dsal:8443/mirror/openshift/release-images:4.11.20-x86_64 \
+  registry.dsal:8443/mirror/openshift/release:4.11.20-x86_64
+oc image mirror -a ~/pull-secret-all.json \
+  registry.dsal:8443/mirror/openshift/release-images:4.11.20-x86_64 \
+  registry.dsal:8443/mirror/openshift/release:4.11.20</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Mirror kcli images</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/curl:latest registry.dsal:8443/karmab/curl:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-coredns:latest registry.dsal:8443/karmab/origin-coredns:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/haproxy:latest registry.dsal:8443/karmab/haproxy:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-keepalived-ipfailover:latest registry.dsal:8443/karmab/origin-keepalived-ipfailover:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/mdns-publisher:latest registry.dsal:8443/karmab/mdns-publisher:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kubectl:latest registry.dsal:8443/karmab/kubectl:latest
+oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kcli:latest registry.dsal:8443/karmab/kcli:latest</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Deploy cluster with kcli</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create kube openshift \
+-P ctlplanes=1 -P workers=0 \
+-P ctlplanes_memory=16384 \
+-P disk_size=120 \
+-P tag=4.11.20 \
+-P pull_secret=~/pull-secret-all.json  \
+-P cluster=lab-test-disconnected \
+-P domain=labdis.dsal \
+-P disconnected_url=registry.dsal:8443 \
+-P disconnected_prefix=mirror/openshift/release \
+-P disconnected_user=registry \
+-P disconnected_password=redhat12345678 \
+-P ca="$(cat ~/ca.crt)" \
+-P api_ip=192.168.122.252 \
+ kcli-ocp-dis-dsal</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Take a look to the install-config.yaml created by kcli</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">$ cat ~/.kcli/clusters/lab-test-disconnected/install-config.yaml.bck
+
+apiVersion: v1
+baseDomain: labdis.dsal
+compute:
+- name: worker
+  replicas: 0
+controlPlane:
+  name: master
+  replicas: 1
+metadata:
+  name: lab-test-disconnected
+networking:
+  networkType: OpenShiftSDN
+  clusterNetwork:
+  - cidr: 10.132.0.0/14
+    hostPrefix: 23
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+additionalTrustBundle: |
+ -----BEGIN CERTIFICATE-----
+ MIIFKzCCAxOgAwIBAgIUGpiiFiCmsl3itVIecAblpdHqM0MwDQYJKoZIhvcNAQEL
+ ...
+ -----END CERTIFICATE-----
+pullSecret: '{"auths": {"registry.dsal:8443": {"auth": "cmVnaXN0cnk6cmVkaGF0MTIzNDU2Nzg=", "email": "<a href="mailto:jhendrix@karmalabs.corp">jhendrix@karmalabs.corp</a>"}}}'
+sshKey: |
+  ssh-rsa AAAAB3Nz...
+imageContentSources:
+- mirrors:
+  - registry.dsal:8443/mirror/openshift/release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+- mirrors:
+  - registry.dsal:8443/mirror/openshift/release
+  source: quay.io/ocp-release</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check cluster it&#8217;s working. Export <code>KUBECONFIG</code> variable:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KUBECONFIG=/root/.kcli/clusters/lab-test-disconnected/auth/kubeconfig</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>And then, to check all is correct</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get clusterversion,nodes,co</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a></span>
+  <span class="next"><a href="07-Disconnected-Operators.html">Disconnected Catalogs and Operators</a></span>
+</nav>
+</article>
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <a class="rhd-logo" href="https://developers.redhat.com" target="_blank"></div>
+</footer>
+<script src="../_/js/vendor/clipboard.js"></script>
+<script src="../_/js/site.js"></script>
+<script async src="../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

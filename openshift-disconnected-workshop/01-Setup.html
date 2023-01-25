@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Setup :: OCP Disconnected Workshop</title>
+    <link rel="canonical" href="https://manuvaldi.github.io/openshift-disconnected-workshop/openshift-disconnected-workshop/01-Setup.html">
+    <link rel="prev" href="index.html">
+    <link rel="next" href="02-Deploy-Cluster.html">
+    <meta name="generator" content="Antora 3.0.0">
+    <link rel="stylesheet" href="../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://developers.redhat.com" target="_blank"><img src="../_/img/NewRHDFullLogo_4-color_white-wordmark.png" height="40px" alt="Red Hat Developer Program"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="https://manuvaldi.github.io/openshift-disconnected-workshop">OCP Disconnected Workshop</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://developers.redhat.com/ebooks/" target="_blank">Books</a>
+        <a class="navbar-item" href="https://developers.redhat.com/cheatsheets/" target="_blank">Cheat Sheets</a>
+        <a class="navbar-item" href="https://developers.redhat.com/events/" target="_blank">Upcoming Events</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">More Tutorials</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/kubernetes-tutorial/" target="_blank">Kubernetes</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/istio-tutorial/" target="_blank">Istio</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/quarkus-tutorial/" target="_blank">Quarkus</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/knative-tutorial/" target="_blank">Knative</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/tekton-tutorial/" target="_blank">Tekton</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="openshift-disconnected-workshop" data-version="master">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html"></a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html">Setup</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="#prerequisite">Prerequisites</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#prerequisite-binaries">kcli and binaries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#presequisites-sshuttle">sshuttle</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="#registryvm">Registry VM</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#registryvm-registryv2">Create registry with registry:v2 image (classic)</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#registryvm-mirror-registry">Create registry with mirror-registry</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#registryvm-quay-standalone">Create Registry Quay standalone with proxy cache/mirror functionality</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#registryvm-cachecontainer">Creating Registry Cache with registry-cache container</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="#testing-registries">Testing registries</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="02-Deploy-Cluster.html">Cluster Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="03-Mirror-OCP-Images.html">Mirroring Openshift Images</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirroroc">Mirror with oc binary</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirrorocmirror">Mirror with oc-mirror binary</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html">Convert Cluster to disconnected</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#importca">Import CA certificates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#configuremirrors">Configure mirrors in the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#updatepullsecret">Update global pull secret</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#isolatecluster">Isolate the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#reboot">Reboot node and check registry logs</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade1">Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade2">Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade3">Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="06-Disconnected-Deployment.html">Disconnected Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html">Disconnected Catalogs and Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#catalogs">Disconnected Catalogs</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrored">Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrroredcustomcatalogs">Default catalogs with images mirrored and Custom catalogs</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#customcatalog">Custom catalog</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#operators">Disconnected Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringoc">Mirroring with <code>oc</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringocmirror">Mirroring with <code>oc-mirror</code></a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetcustomcatalog">ImageSet for custom catalog index</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetfiltered">ImageSet for official catalog filtered</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html">Insights and Telemetry services</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insights">Insights</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#disableinsights">Disable Insights</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insightsmanualupload">Manual upload</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetry">Telemetry client</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetrymanualupload">Manual Upload</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="09-Cluster-Samples.html">Cluster Samples Operator</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="10-Openshift-Update-Service.html">Openshift Update Service</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="11-Proxy.html">Cluster-wide Proxy</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="99-References.html">References</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Openshift Disconnected Workshop</a></li>
+    <li><a href="01-Setup.html">Setup</a></li>
+  </ul>
+</nav>
+  <div class="edit-this-page"><a href="https://github.com/manuvaldi/openshift-disconnected-workshop/edit/master/documentation/modules/ROOT/pages/01-Setup.adoc">Edit this Page</a></div>
+  </div>
+  <div class="content">
+<article class="doc">
+<h1 class="page">Setup</h1>
+<div class="sect1">
+<h2 id="prerequisite"><a class="anchor" href="#prerequisite"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="prerequisite-binaries"><a class="anchor" href="#prerequisite-binaries"></a>kcli and binaries</h3>
+<div class="paragraph">
+<p>Connect with ssh to the machine and become root with <code>sudo su</code>. The rest of the workshop we will use <code>root</code> as default user.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install libvirtd</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">yum -y install libvirt libvirt-daemon-driver-qemu qemu-kvm
+usermod -aG qemu,libvirt $(id -un)
+newgrp libvirt
+systemctl enable --now libvirtd</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create a pool with the additional disk mounted in <code>/mnt</code></p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create pool -p /mnt default</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install kcli</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl <a href="https://raw.githubusercontent.com/karmab/kcli/main/install.sh" class="bare">https://raw.githubusercontent.com/karmab/kcli/main/install.sh</a> | sudo bash</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install some binaries (oc, opm, wget, podman ):</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">dnf -y -q install wget podman
+wget <a href="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz" class="bare">https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz</a>
+tar xvfz openshift-client-linux.tar.gz
+mv oc /usr/local/bin/
+mv kubectl /usr/local/bin/
+rm -f openshift-client-linux.tar.gz
+
+wget <a href="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/opm-linux-4.11.20.tar.gz" class="bare">https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/opm-linux-4.11.20.tar.gz</a>
+tar xvfz opm-linux-4.11.20.tar.gz
+cp opm /usr/local/bin/
+chmod +x /usr/local/bin/opm</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="presequisites-sshuttle"><a class="anchor" href="#presequisites-sshuttle"></a>sshuttle</h3>
+<div class="paragraph">
+<p>To be able to access to VM network from our laptop we will use <code>sshuttle</code>. This software allow traffic through ssh protocol, similar to a VPN.</p>
+</div>
+<div class="paragraph">
+<p>If you use fedora/rhel/centos:</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo dnf install -y sshuttle</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To open a <strong>VPN</strong> :</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r azureuser@&lt;public ip of your machine&gt; 192.168.122.0/24  --ssh-cmd 'ssh -i &lt;your certificate&gt;.pem'</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="registryvm"><a class="anchor" href="#registryvm"></a>Registry virtual machine</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now we have our machine prepared to create VMs with libvirtd. Connect to your hypervisor and become root.</p>
+</div>
+<div class="paragraph">
+<p>The first will be our <code>registry</code> machine. In this machine we will test 4 different solutions to host or cache Openshift images:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Clasic Registry v2</p>
+</li>
+<li>
+<p>Registry with <code>mirror-registry</code>: A software provided by Red Hat based on Quay</p>
+</li>
+<li>
+<p>Basic installation of Quay. A minimal non-prod installation of Quay to be able to configure the mirror function in an org.</p>
+</li>
+<li>
+<p>Registry cache. A open source software created by manuvaldi that allow caching of images from different repositories in a simple way.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Follow next steps to create all:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Download fedora image with kcli</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli download image fedoralatest</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create registry vm</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create vm -i fedoralatest -P disks=[250] -P memory=8192 -P numcpus=4  registry</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Get IP from registry VM and add the dns to /etc/hosts</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ kcli list vm
+---------------------------------------------------------------------------------------------+
+|   Name   | Status |       Ip      |                 Source                |  Plan |   Profile    |
+---------------------------------------------------------------------------------------------+
+| registry |   up   | 192.168.122.7 | Fedora-Cloud-Base-37-1.7.x86_64.qcow2 | kvirt | fedoralatest |
+---------------------------------------------------------------------------------------------+</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create <code>/etc/hosts</code> entry:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "192.168.122.7 registry.dsal" &gt;&gt; /etc/hosts</code></pre>
+</div>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>To refer to this VM we will use always the DNS <code>registry.dsal</code></p>
+</div>
+</blockquote>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Now reload libvirtd to load dns changes</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl reload libvirtd</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="registryvm-registryv2"><a class="anchor" href="#registryvm-registryv2"></a>Create registry with registry:v2 image (classic)</h3>
+<div class="paragraph">
+<p>Connect to registry instance with <code>kcli ssh registry</code> and then (uso <code>sudo su</code> again):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>set permissive o disable selinux</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+setenforce 0</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>We can use the guide <a href="https://www.redhat.com/en/blog/openshift-private-registry" class="bare">https://www.redhat.com/en/blog/openshift-private-registry</a> to create a registry. In the following lines the "summary":</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">REGISTRYHOSTNAME=registry.dsal
+dnf update -q -y
+
+mkdir -p /data/registry/{auth,certs,data}
+
+openssl req -newkey rsa:4096 -nodes -sha256 \
+-keyout /data/registry/certs/registry.key -x509 -days 3650 \
+-out /data/registry/certs/registry.crt \
+-subj "/CN=$REGISTRYHOSTNAME" \
+-addext "subjectAltName = DNS:$REGISTRYHOSTNAME"
+
+cat /data/registry/certs/registry.crt /data/registry/certs/registry.key  &gt; /data/registry/certs/certs.pem
+
+cp /data/registry/certs/registry.crt /etc/pki/ca-trust/source/anchors/
+update-ca-trust
+
+dnf -y -q install httpd-tools
+htpasswd -bBc /data/registry/auth/htpasswd registry redhat12345678
+
+dnf -y -q install podman
+podman create --name ocp-registry --net host -p 5000:5000 \
+  -v /data/registry/data:/var/lib/registry:z -v /data/registry/auth:/auth:z \
+  -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" \
+  -e "REGISTRY_HTTP_SECRET=$(date | md5sum)" \
+  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /data/registry/certs:/certs:z \
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.crt \
+  -e REGISTRY_HTTP_TLS_KEY=/certs/registry.key docker.io/library/registry:2
+
+podman start ocp-registry
+
+cat &lt;&lt;EOF &gt; ~/registry-secret.json
+"$REGISTRYHOSTNAME:5000": {   "email": "<a href="mailto:registry@redhat.com">registry@redhat.com</a>",   "auth": "$(echo -n 'registry:redhat12345678' | base64 -w0)"}
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="registryvm-mirror-registry"><a class="anchor" href="#registryvm-mirror-registry"></a>Create registry with mirror-registry</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Install dependencies and download binary</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">dnf -y -q install podman acl wget
+mkdir -p ~/mirror-registry &amp;&amp; cd ~/mirror-registry
+wget <a href="https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.2.9/mirror-registry.tar.gz" class="bare">https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.2.9/mirror-registry.tar.gz</a>
+tar xvfz mirror-registry.tar.gz</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create registry</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./mirror-registry install --quayHostname registry.dsal --quayRoot /data/mirror-registry --initUser registry --initPassword redhat12345678 --sslCert /data/registry/certs/registry.crt --sslKey /data/registry/certs/registry.key</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will run a registry with url:</p>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">....
+Quay is available at <a href="https://registry.dsal:8443" class="bare">https://registry.dsal:8443</a> with credentials (registry, redhat12345678)</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="registryvm-quay-standalone"><a class="anchor" href="#registryvm-quay-standalone"></a>Create Registry Quay standalone with proxy cache/mirror functionality</h3>
+<div class="paragraph">
+<p>First of all go to <code><a href="https://console.redhat.com/openshift/downloads#tool-pull-secret" class="bare">https://console.redhat.com/openshift/downloads#tool-pull-secret</a></code> and copy a Openshift pull secret to <code>~/pull-secret.json</code></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Now, copy it to docker dir:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir -p /root/.docker &amp;&amp; cp ~/pull-secret.json ~/.docker/config.json</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Prepare and run postgresql and redis containers. Then we will run a quay config container to be able to create a configuration for our "mini" quay.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export QUAY=/data/quay
+mkdir -p $QUAY/postgres-quay
+setfacl -m u:26:-wx $QUAY/postgres-quay
+
+podman run -d --name quay-standalone-postgresql \
+  -e POSTGRESQL_USER=quayuser \
+  -e POSTGRESQL_PASSWORD=quaypass \
+  -e POSTGRESQL_DATABASE=quay \
+  -e POSTGRESQL_ADMIN_PASSWORD=adminpass \
+  -p 5432:5432 \
+  -v $QUAY/postgres-quay:/var/lib/pgsql/data:Z \
+  registry.redhat.io/rhel8/postgresql-10:1
+
+sleep 10
+podman exec -it quay-standalone-postgresql /bin/bash -c 'echo "CREATE EXTENSION IF NOT EXISTS pg_trgm" | psql -d quay -U postgres'
+
+podman run -d  --name quay-standalone-redis \
+  -p 6379:6379 \
+  -e REDIS_PASSWORD=strongpassword \
+  registry.redhat.io/rhel8/redis-5:1
+
+podman run --rm -it --name quay_config -p 80:8080 -p 443:8443 registry.redhat.io/quay/quay-rhel8:v3.8.0 config secret</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+the last command run the quay config container. We can access to the web ui from our laptop browser. It is possible because you are running sshuttle VPN.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+take note of passwords used for the next step ;)
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Now we are going to create a config file for quay. Open in your browser the config app in <a href="http://registry.dsal" class="bare">http://registry.dsal</a> (you can do it using the registry VM IP address instead)</p>
+</li>
+<li>
+<p>login to UI with credentials: <code>quayconfig/secret</code></p>
+</li>
+<li>
+<p>In Server Hostname: <code>registry.dsal</code></p>
+</li>
+<li>
+<p>Use IP of <code>registry</code> machine for postgres and redis connection</p>
+</li>
+<li>
+<p>All passwords and port are in the script. look before asking!!!</p>
+</li>
+<li>
+<p>In super-users section add 'registry' user</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can stop config container with Contro+C</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Download quay config and copy it to registry machine</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">scp -i testlab01_key.pem quay-config.tar.gz azureuser@20.93.161.196:</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>and then from hypervisor to the registry machine</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli scp /home/azureuser/quay-config.tar.gz registry:/tmp/</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Prepare config and storage data dirs</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export QUAY=/data/quay
+rm -Rf $QUAY/config &amp;&amp; mkdir $QUAY/config
+cp /tmp/quay-config.tar.gz $QUAY/config
+cd $QUAY/config
+tar xvf quay-config.tar.gz
+echo "FEATURE_PROXY_CACHE: true" &gt;&gt; /data/quay/config/config.yaml
+sed 's/PREFERRED_URL_SCHEME:.*/PREFERRED_URL_SCHEME: https/' -i /data/quay/config/config.yaml
+cp /data/registry/certs/registry.crt $QUAY/config/ssl.cert
+cp /data/registry/certs/registry.key $QUAY/config/ssl.key
+chmod 444 $QUAY/config/ssl*
+mkdir -p $QUAY/storage
+setfacl -m u:1001:-wx $QUAY/storage</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Finally run quay app container:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export QUAY=/data/quay
+podman run -d  -p 80:8080 -p 443:8443  \
+   --name=quay-standalone-basic \
+   -v $QUAY/config:/conf/stack:Z \
+   -v $QUAY/storage:/datastorage:Z \
+   registry.redhat.io/quay/quay-rhel8:v3.8.0</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Enter in web UI interface, create user <code>registry/redhat12345678</code> and create a new organization <code>cache-quayio</code> and configure mirror with next values:</p>
+</li>
+<li>
+<p>Remote Registry: <code>quay.io</code></p>
+</li>
+<li>
+<p>Remote Registry Username, extract from pull-secret:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret.json | jq  -r '.auths["quay.io"].auth |select (.!=null)' | base64 -d | awk -F':' '{print $1}'</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Remote Registry Password:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret.json | jq  -r '.auths["quay.io"].auth |select (.!=null)' | base64 -d | awk -F':' '{print $2}'</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>and Save</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="registryvm-cachecontainer"><a class="anchor" href="#registryvm-cachecontainer"></a>Creating Registry Cache with registry-cache container</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Install dependencies and create dirs</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">yum install -y podman httpd-tools
+mkdir -p /data/registry-cache/{auth,data}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>create credentials</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">htpasswd -bBc /data/registry-cache/auth/htpasswd registry redhat12345678</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create pem file</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat /data/registry/certs/registry.crt /data/registry/certs/registry.key  &gt; /data/registry/certs/certs.pem</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>locate pull-secret
+<code>/root/pull-secret.json</code></p>
+</li>
+<li>
+<p>Run cache container</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman run -d --name registry-cache \
+  -v /root/pull-secret.json:/pull-secret.json:z \
+  -v  /data/registry-cache/data:/var/lib/registry:z \
+  -e CLEANER_MAXSIZE=10G \
+  -e CLEANER_THRESHOLD_PERCENTAGE=20 \
+  -e CLEANER_RUNEVERY_TIME=30m \
+  -v /data/registry/certs:/certs:z \
+  -v /data/registry-cache/auth:/auth:z   \
+  -e "REGISTRY_AUTH=htpasswd"  \
+  -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+  -p 6443:8443 \
+  quay.io/mvalledi/registry-cache:main</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="testing-registries"><a class="anchor" href="#testing-registries"></a>Testing registries</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To be able to test, first of all create credentials and copy it to docker dir (in the registry machine):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Convert it in human-readable json:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret.json | jq  &gt; ~/pull-secret-all.json</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Add credentials in pull-secret-all.json (copy next lines)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">....
+....
+   "registry.dsal:5000": {
+      "email": "registry@redhat.com",
+      "auth": "cmVnaXN0cnk6cmVkaGF0MTIzNDU2Nzg="
+    },
+    "registry.dsal:8443": {
+      "email": "registry@redhat.com",
+      "auth": "cmVnaXN0cnk6cmVkaGF0MTIzNDU2Nzg="
+    },
+    "registry.dsal": {
+      "email": "registry@redhat.com",
+      "auth": "cmVnaXN0cnk6cmVkaGF0MTIzNDU2Nzg="
+    },
+    "registry.dsal:6443": {
+      "email": "registry@redhat.com",
+      "auth": "cmVnaXN0cnk6cmVkaGF0MTIzNDU2Nzg="
+    }</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Copy it again to <code>.docker</code> dir</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cp ~/pull-secret-all.json ~/.docker/config.json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now we will test all registries:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Registry v2 (push and pull)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman pull quay.io/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3
+
+podman push quay.io/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3 registry.dsal:5000/test
+
+podman rmi registry.dsal:5000/test; podman system prune --all --force; podman rmi --all
+
+podman pull registry.dsal:5000/test</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Registry-mirror (push and pull)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman pull quay.io/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3
+
+podman push quay.io/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3 registry.dsal:8443/test
+
+podman rmi registry.dsal:8443/test; podman system prune --all --force; podman rmi --all
+
+podman pull registry.dsal:8443/test</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Registry Quay standalone with proxy cache. (Add registry.dsal entry in /etc/hosts of the registry VM) (only pull)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman rmi registry.dsal/cache-quayio/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3; podman system prune --all --force; podman rmi --all
+
+podman pull registry.dsal/cache-quayio/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Registry Cache (only pull)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman rmi registry.dsal:6443/quay.io/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3; podman system prune --all --force; podman rmi --all
+
+podman pull registry.dsal:6443/quay.io/openshift-release-dev/ocp-release@sha256:e86e058f7f66a687e273792f2e4ec70f3cc43ec9d2894bebee5caf5c4d4851a3</code></pre>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">Openshift Disconnected Workshop</a></span>
+  <span class="next"><a href="02-Deploy-Cluster.html">Cluster Deployment</a></span>
+</nav>
+</article>
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <a class="rhd-logo" href="https://developers.redhat.com" target="_blank"></div>
+</footer>
+<script src="../_/js/vendor/clipboard.js"></script>
+<script src="../_/js/site.js"></script>
+<script async src="../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

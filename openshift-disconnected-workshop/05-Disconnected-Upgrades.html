@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Disconnected Upgrades :: OCP Disconnected Workshop</title>
+    <link rel="canonical" href="https://manuvaldi.github.io/openshift-disconnected-workshop/openshift-disconnected-workshop/05-Disconnected-Upgrades.html">
+    <link rel="prev" href="04-Convert-Cluster-Disconnected.html">
+    <link rel="next" href="06-Disconnected-Deployment.html">
+    <meta name="generator" content="Antora 3.0.0">
+    <link rel="stylesheet" href="../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://developers.redhat.com" target="_blank"><img src="../_/img/NewRHDFullLogo_4-color_white-wordmark.png" height="40px" alt="Red Hat Developer Program"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="https://manuvaldi.github.io/openshift-disconnected-workshop">OCP Disconnected Workshop</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://developers.redhat.com/ebooks/" target="_blank">Books</a>
+        <a class="navbar-item" href="https://developers.redhat.com/cheatsheets/" target="_blank">Cheat Sheets</a>
+        <a class="navbar-item" href="https://developers.redhat.com/events/" target="_blank">Upcoming Events</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">More Tutorials</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/kubernetes-tutorial/" target="_blank">Kubernetes</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/istio-tutorial/" target="_blank">Istio</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/quarkus-tutorial/" target="_blank">Quarkus</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/knative-tutorial/" target="_blank">Knative</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/tekton-tutorial/" target="_blank">Tekton</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="openshift-disconnected-workshop" data-version="master">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html"></a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html">Setup</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#prerequisite">Prerequisites</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#prerequisite-binaries">kcli and binaries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#presequisites-sshuttle">sshuttle</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#registryvm">Registry VM</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-registryv2">Create registry with registry:v2 image (classic)</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-mirror-registry">Create registry with mirror-registry</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-quay-standalone">Create Registry Quay standalone with proxy cache/mirror functionality</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-cachecontainer">Creating Registry Cache with registry-cache container</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="01-Setup.html#testing-registries">Testing registries</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="02-Deploy-Cluster.html">Cluster Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="03-Mirror-OCP-Images.html">Mirroring Openshift Images</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirroroc">Mirror with oc binary</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirrorocmirror">Mirror with oc-mirror binary</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html">Convert Cluster to disconnected</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#importca">Import CA certificates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#configuremirrors">Configure mirrors in the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#updatepullsecret">Update global pull secret</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#isolatecluster">Isolate the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#reboot">Reboot node and check registry logs</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="#upgrade1">Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="#upgrade2">Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="#upgrade3">Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="06-Disconnected-Deployment.html">Disconnected Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html">Disconnected Catalogs and Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#catalogs">Disconnected Catalogs</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrored">Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrroredcustomcatalogs">Default catalogs with images mirrored and Custom catalogs</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#customcatalog">Custom catalog</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#operators">Disconnected Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringoc">Mirroring with <code>oc</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringocmirror">Mirroring with <code>oc-mirror</code></a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetcustomcatalog">ImageSet for custom catalog index</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetfiltered">ImageSet for official catalog filtered</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html">Insights and Telemetry services</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insights">Insights</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#disableinsights">Disable Insights</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insightsmanualupload">Manual upload</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetry">Telemetry client</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetrymanualupload">Manual Upload</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="09-Cluster-Samples.html">Cluster Samples Operator</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="10-Openshift-Update-Service.html">Openshift Update Service</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="11-Proxy.html">Cluster-wide Proxy</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="99-References.html">References</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Openshift Disconnected Workshop</a></li>
+    <li><a href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a></li>
+  </ul>
+</nav>
+  <div class="edit-this-page"><a href="https://github.com/manuvaldi/openshift-disconnected-workshop/edit/master/documentation/modules/ROOT/pages/05-Disconnected-Upgrades.adoc">Edit this Page</a></div>
+  </div>
+  <div class="content">
+<article class="doc">
+<h1 class="page">Disconnected Upgrades</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now, we have our cluster disconnected. Now we will upgrade using the different registry types deployed in previous sections:</p>
+</div>
+<div class="paragraph">
+<p>4 registries:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A registry v2 with 4.9.10 in registry.dsal:5000</p>
+</li>
+<li>
+<p>A registry mirror-registry method with 4.9.10 and 4.9.22 in registry.dsal:8443</p>
+</li>
+<li>
+<p>A registry cache with a minimal/basic Quay deployment in registry.dsal (443). it can cache any release of Openshift. We will use it for 4.10.20 release.</p>
+</li>
+<li>
+<p>A registry cache with a registry-cache in registry.dsal:6443. It can cache any release of Openshift. We will use it for 4.11.20 release.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>So, we are going to upgrade the cluster in this order:</p>
+</div>
+<div class="paragraph">
+<p>4.9.10 &#8594; 4.9.22 &#8594; 4.10.20 &#8594; 4.11.20</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="upgrade1"><a class="anchor" href="#upgrade1"></a>Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Our 4.9.22 release images are in the registry (mirror-registry) at url <code>registry.dsal:8443</code></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create new <code>ImageContentSourcePolicy</code> (<code>5-icsp-registry-mirror-8443.yaml</code>)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: icsp-registry-mirror-8443
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - registry.dsal:8443/mirror/openshift/release-images
+    source: quay.io/openshift-release-dev/ocp-release
+  - mirrors:
+    - registry.dsal:8443/mirror/openshift/release
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>and apply</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 5-icsp-registry-mirror-8443.yaml</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+don&#8217;t worry for applying different <code>ImageContentSourcePolicy</code> objects in the cluster. The configuration is incremental. If an image isn&#8217;t found in a mirror, the engine tries in the next mirror registry configured.
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Upgrade cluster from 4.9.10 to 4.9.22</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm upgrade --to-image=registry.dsal:8443/mirror/openshift/release-images:4.9.22-x86_64 --force --allow-explicit-upgrade</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check registry logs to watch if cluster is requesting image to the registry</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman logs --tail=10 -f quay-app</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You can monitor the upgrade from CLI:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get clusterversion; oc get co</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until all <code>ClusterOperators</code> are available and ready</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="upgrade2"><a class="anchor" href="#upgrade2"></a>Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this upgrade we will use our basic/mini Quay deployment acting as registry cache in url <code>registry.dsal(:443)</code>. Follow the next steps to upgrade:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create the new <code>ImageContentSourcePolicy</code> (<code>5-icsp-registry-cache-443.yaml</code>)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: icsp-quay-mirror-443
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - registry.dsal/cache-quayio/openshift-release-dev/ocp-release
+    source: quay.io/openshift-release-dev/ocp-release
+  - mirrors:
+    - registry.dsal/cache-quayio/openshift-release-dev/ocp-v4.0-art-dev
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>and apply</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 5-icsp-registry-mirror-443.yaml</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Upgrade cluster from 4.9.22 to 4.10.20</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm upgrade --to-image=registry.dsal/cache-quayio/openshift-release-dev/ocp-release:4.10.20-x86_64 --force --allow-explicit-upgrade</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>check registry logs</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman logs --tail=10 -f quay-standalone-basic</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check clusteroperators</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get co</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="upgrade3"><a class="anchor" href="#upgrade3"></a>Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Apply new ImageContentSourcePolicy <code>5-icsp-registry-cache-6443.yaml</code></p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: icsp-registry-cache-6443
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - registry.dsal:6443/quay.io/openshift-release-dev/ocp-release
+    source: quay.io/openshift-release-dev/ocp-release
+  - mirrors:
+    - registry.dsal:6443/quay.io/openshift-release-dev/ocp-v4.0-art-dev
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>and apply</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 5-icsp-registry-cache-6443.yaml</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Delete ImageContentSourcePolicy from quay basic cache, to force use new registry cache.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete ImageContentSourcePolicy icsp-quay-cache-443</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Upgrade cluster from 4.10.20 to 4.11.20 allocated in registry-mirror</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm upgrade --to-image=registry.dsal:6443/quay.io/openshift-release-dev/ocp-release:4.11.20-x86_64 --force --allow-explicit-upgrade</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check registry logs</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman logs --tail=10 -f quay-app</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check clusteroperators</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get co</code></pre>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="04-Convert-Cluster-Disconnected.html">Convert Cluster to disconnected</a></span>
+  <span class="next"><a href="06-Disconnected-Deployment.html">Disconnected Deployment</a></span>
+</nav>
+</article>
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <a class="rhd-logo" href="https://developers.redhat.com" target="_blank"></div>
+</footer>
+<script src="../_/js/vendor/clipboard.js"></script>
+<script src="../_/js/site.js"></script>
+<script async src="../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

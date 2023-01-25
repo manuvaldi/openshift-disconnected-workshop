@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Cluster Samples Operator in Disconnected :: OCP Disconnected Workshop</title>
+    <link rel="canonical" href="https://manuvaldi.github.io/openshift-disconnected-workshop/openshift-disconnected-workshop/09-Cluster-Samples.html">
+    <link rel="prev" href="08-Insights-and-Telemetry.html">
+    <link rel="next" href="10-Openshift-Update-Service.html">
+    <meta name="generator" content="Antora 3.0.0">
+    <link rel="stylesheet" href="../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://developers.redhat.com" target="_blank"><img src="../_/img/NewRHDFullLogo_4-color_white-wordmark.png" height="40px" alt="Red Hat Developer Program"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="https://manuvaldi.github.io/openshift-disconnected-workshop">OCP Disconnected Workshop</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://developers.redhat.com/ebooks/" target="_blank">Books</a>
+        <a class="navbar-item" href="https://developers.redhat.com/cheatsheets/" target="_blank">Cheat Sheets</a>
+        <a class="navbar-item" href="https://developers.redhat.com/events/" target="_blank">Upcoming Events</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">More Tutorials</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/kubernetes-tutorial/" target="_blank">Kubernetes</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/istio-tutorial/" target="_blank">Istio</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/quarkus-tutorial/" target="_blank">Quarkus</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/knative-tutorial/" target="_blank">Knative</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/tekton-tutorial/" target="_blank">Tekton</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="openshift-disconnected-workshop" data-version="master">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html"></a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html">Setup</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#prerequisite">Prerequisites</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#prerequisite-binaries">kcli and binaries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#presequisites-sshuttle">sshuttle</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#registryvm">Registry VM</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-registryv2">Create registry with registry:v2 image (classic)</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-mirror-registry">Create registry with mirror-registry</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-quay-standalone">Create Registry Quay standalone with proxy cache/mirror functionality</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-cachecontainer">Creating Registry Cache with registry-cache container</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="01-Setup.html#testing-registries">Testing registries</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="02-Deploy-Cluster.html">Cluster Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="03-Mirror-OCP-Images.html">Mirroring Openshift Images</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirroroc">Mirror with oc binary</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirrorocmirror">Mirror with oc-mirror binary</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html">Convert Cluster to disconnected</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#importca">Import CA certificates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#configuremirrors">Configure mirrors in the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#updatepullsecret">Update global pull secret</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#isolatecluster">Isolate the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#reboot">Reboot node and check registry logs</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade1">Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade2">Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade3">Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="06-Disconnected-Deployment.html">Disconnected Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html">Disconnected Catalogs and Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#catalogs">Disconnected Catalogs</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrored">Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrroredcustomcatalogs">Default catalogs with images mirrored and Custom catalogs</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#customcatalog">Custom catalog</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#operators">Disconnected Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringoc">Mirroring with <code>oc</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringocmirror">Mirroring with <code>oc-mirror</code></a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetcustomcatalog">ImageSet for custom catalog index</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetfiltered">ImageSet for official catalog filtered</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html">Insights and Telemetry services</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insights">Insights</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#disableinsights">Disable Insights</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insightsmanualupload">Manual upload</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetry">Telemetry client</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetrymanualupload">Manual Upload</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="09-Cluster-Samples.html">Cluster Samples Operator</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="10-Openshift-Update-Service.html">Openshift Update Service</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="11-Proxy.html">Cluster-wide Proxy</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="99-References.html">References</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Openshift Disconnected Workshop</a></li>
+    <li><a href="09-Cluster-Samples.html">Cluster Samples Operator</a></li>
+  </ul>
+</nav>
+  <div class="edit-this-page"><a href="https://github.com/manuvaldi/openshift-disconnected-workshop/edit/master/documentation/modules/ROOT/pages/09-Cluster-Samples.adoc">Edit this Page</a></div>
+  </div>
+  <div class="content">
+<article class="doc">
+<h1 class="page">Cluster Samples Operator in Disconnected</h1>
+<div class="paragraph">
+<p>In a disconnected environment, the samples operator is <code>Removed</code>. To be able to get available the samples, and change to <code>Managed</code>, we need to mirror and change these images:</p>
+</div>
+<div class="paragraph">
+<p>The images to mirror are in a configmap in Openshift:</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cm -n openshift-cluster-samples-operator imagestreamtag-to-image -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create a mapping.txt with this script (<code>9-samples-mirroring.sh</code>):</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">pullsecret=$1
+dstregistry=registry.dsal:8443/mirror/samples/
+json="$(oc get cm -n openshift-cluster-samples-operator imagestreamtag-to-image -o json )"
+
+echo "" &gt; mapping.txt.tmp
+echo "" &gt; samples-configmap-data.txt
+for key in `echo $json | jq --raw-output '.data | keys[]'`; do
+  image="$(echo $json | jq --arg key $key -r '.data | .[$key]')"
+  urlpath="$(echo $image | cut -d/ -f2-)"
+  urlpathwithouttag="$(echo $urlpath | cut -d: -f1)"
+  echo "IS: $key"
+  echo "Image: $image"
+  echo "Path: $urlpath"
+  echo "$key: '${dstregistry}${urlpath}'`" &gt;&gt; samples-configmap-data.txt
+  if echo $urlpath | grep -q -v ":"; then
+    continue
+  fi
+  echo $image=${dstregistry}${urlpath} &gt;&gt; mapping.txt.tmp
+  echo "---"
+done
+
+sort mapping.txt.tmp | uniq &gt; mapping.txt
+rm -Rf mapping.txt.tmp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>you can execute it like this:</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sh 9-samples-mirroring.sh ~/pull-secret-all.json</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Mirror with oc (or oc-mirror if you wish, you know how to do it ;) )</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc image mirror --skip-multiple-scopes=true --continue-on-error --insecure=true -a ./pull-secret-all.json -f mapping.txt</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Import CA from regitry</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create configmap custom-ca-registry --from-file=registry.dsal..8443=ca.crt -n openshift-config
+configmap/custom-ca-registry created
+
+oc patch image.config.openshift.io/cluster --patch '{"spec":{"additionalTrustedCA":{"name":"custom-ca-registry"}}}' --type=merge</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now, you can see the samples in the Developer Console.</p>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="08-Insights-and-Telemetry.html">Insights and Telemetry services</a></span>
+  <span class="next"><a href="10-Openshift-Update-Service.html">Openshift Update Service</a></span>
+</nav>
+</article>
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <a class="rhd-logo" href="https://developers.redhat.com" target="_blank"></div>
+</footer>
+<script src="../_/js/vendor/clipboard.js"></script>
+<script src="../_/js/site.js"></script>
+<script async src="../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

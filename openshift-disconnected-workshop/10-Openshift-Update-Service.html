@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Openshift Update Service disconnected :: OCP Disconnected Workshop</title>
+    <link rel="canonical" href="https://manuvaldi.github.io/openshift-disconnected-workshop/openshift-disconnected-workshop/10-Openshift-Update-Service.html">
+    <link rel="prev" href="09-Cluster-Samples.html">
+    <link rel="next" href="11-Proxy.html">
+    <meta name="generator" content="Antora 3.0.0">
+    <link rel="stylesheet" href="../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://developers.redhat.com" target="_blank"><img src="../_/img/NewRHDFullLogo_4-color_white-wordmark.png" height="40px" alt="Red Hat Developer Program"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="https://manuvaldi.github.io/openshift-disconnected-workshop">OCP Disconnected Workshop</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://developers.redhat.com/ebooks/" target="_blank">Books</a>
+        <a class="navbar-item" href="https://developers.redhat.com/cheatsheets/" target="_blank">Cheat Sheets</a>
+        <a class="navbar-item" href="https://developers.redhat.com/events/" target="_blank">Upcoming Events</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">More Tutorials</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/kubernetes-tutorial/" target="_blank">Kubernetes</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/istio-tutorial/" target="_blank">Istio</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/quarkus-tutorial/" target="_blank">Quarkus</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/knative-tutorial/" target="_blank">Knative</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/tekton-tutorial/" target="_blank">Tekton</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="openshift-disconnected-workshop" data-version="master">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html"></a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html">Setup</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#prerequisite">Prerequisites</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#prerequisite-binaries">kcli and binaries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#presequisites-sshuttle">sshuttle</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="01-Setup.html#registryvm">Registry VM</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-registryv2">Create registry with registry:v2 image (classic)</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-mirror-registry">Create registry with mirror-registry</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-quay-standalone">Create Registry Quay standalone with proxy cache/mirror functionality</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="01-Setup.html#registryvm-cachecontainer">Creating Registry Cache with registry-cache container</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="01-Setup.html#testing-registries">Testing registries</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="02-Deploy-Cluster.html">Cluster Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="03-Mirror-OCP-Images.html">Mirroring Openshift Images</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirroroc">Mirror with oc binary</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="03-Mirror-OCP-Images.html#mirrorocmirror">Mirror with oc-mirror binary</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html">Convert Cluster to disconnected</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#importca">Import CA certificates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#configuremirrors">Configure mirrors in the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#updatepullsecret">Update global pull secret</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#isolatecluster">Isolate the cluster</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="04-Convert-Cluster-Disconnected.html#reboot">Reboot node and check registry logs</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade1">Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade2">Upgrade to 4.10.20 with a basic/mini Quay in registry.dsal (443)</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="05-Disconnected-Upgrades.html#upgrade3">Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="06-Disconnected-Deployment.html">Disconnected Deployment</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html">Disconnected Catalogs and Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#catalogs">Disconnected Catalogs</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrored">Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#defaultmirrroredcustomcatalogs">Default catalogs with images mirrored and Custom catalogs</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#customcatalog">Custom catalog</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#operators">Disconnected Operators</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringoc">Mirroring with <code>oc</code></a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="07-Disconnected-Operators.html#mirroringocmirror">Mirroring with <code>oc-mirror</code></a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetcustomcatalog">ImageSet for custom catalog index</a>
+  </li>
+  <li class="nav-item" data-depth="4">
+    <a class="nav-link" href="07-Disconnected-Operators.html#imagesetfiltered">ImageSet for official catalog filtered</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html">Insights and Telemetry services</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insights">Insights</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#disableinsights">Disable Insights</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#insightsmanualupload">Manual upload</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetry">Telemetry client</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="08-Insights-and-Telemetry.html#telemetrymanualupload">Manual Upload</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="09-Cluster-Samples.html">Cluster Samples Operator</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="10-Openshift-Update-Service.html">Openshift Update Service</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="11-Proxy.html">Cluster-wide Proxy</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="99-References.html">References</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Openshift Disconnected Workshop</a></li>
+    <li><a href="10-Openshift-Update-Service.html">Openshift Update Service</a></li>
+  </ul>
+</nav>
+  <div class="edit-this-page"><a href="https://github.com/manuvaldi/openshift-disconnected-workshop/edit/master/documentation/modules/ROOT/pages/10-Openshift-Update-Service.adoc">Edit this Page</a></div>
+  </div>
+  <div class="content">
+<article class="doc">
+<h1 class="page">Openshift Update Service disconnected</h1>
+<div class="paragraph">
+<p>First of all, we need a to install Openshift Update Service Operator following next steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create a yaml file with the namespace, the operator group and de subscription (<code>10-update-service-operator.yaml</code>)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-update-service
+  annotations:
+    openshift.io/node-selector: ""
+  labels:
+    openshift.io/cluster-monitoring: "true"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: update-service-operator-group
+  namespace: openshift-update-service
+spec:
+  targetNamespaces:
+  - openshift-update-service
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: update-service-subscription
+  namespace: openshift-update-service
+spec:
+  channel: v1
+  installPlanApproval: "Automatic"
+  source: "redhat-operator-index"
+  sourceNamespace: "openshift-marketplace"
+  name: "cincinnati-operator"</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Apply it</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 10-update-service-operator.yaml</code></pre>
+</div>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">namespace/openshift-update-service created
+operatorgroup.operators.coreos.com/update-service-operator-group created
+subscription.operators.coreos.com/update-service-subscription created</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure registry certificate to trusted store</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you have one configmap in the object proxy/cluster, you must only modify the ConfigMap.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-registry-ca
+  namespace: openshift-config
+data:
+  updateservice-registry: |
+    -----BEGIN CERTIFICATE-----
+    MIIFKzCCAxOgAwIBAgIUOwRTWpPLn6/4nMepKoivyBNY2IIwDQYJKoZIhvcNAQEL
+    ...
+    HQTLljb0wWdsLQ8juGIGMA7WmKhoTaYXcs2lJ8W1C9ioZJMVJOtQCrVmJrfc25PR
+    jet5zqdfRDxalVS0nOI/qakkKoYnhoTyZuFuxicRAA==
+    -----END CERTIFICATE-----
+  registry.dsal..8443: |
+    -----BEGIN CERTIFICATE-----
+    MIIFKzCCAxOgAwIBAgIUOwRTWpPLn6/4nMepKoivyBNY2IIwDQYJKoZIhvcNAQEL
+    ...
+    HQTLljb0wWdsLQ8juGIGMA7WmKhoTaYXcs2lJ8W1C9ioZJMVJOtQCrVmJrfc25PR
+    jet5zqdfRDxalVS0nOI/qakkKoYnhoTyZuFuxicRAA==
+    -----END CERTIFICATE-----</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>enable CA in proxy also (user-ca-bundle)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch image.config.openshift.io/cluster --type=merge --patch='{"spec":{"additionalTrustedCA:":{"name":"my-registry-ca"}}}'</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create graph update image (<code>10-update-service-dockerfile</code>)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-txt hljs" data-lang="txt">FROM registry.access.redhat.com/ubi8/ubi:8.1
+
+RUN curl -L -o cincinnati-graph-data.tar.gz https://github.com/openshift/cincinnati-graph-data/archive/master.tar.gz
+
+CMD exec /bin/bash -c "tar xvzf cincinnati-graph-data.tar.gz -C /var/lib/cincinnati/graph-data/ --strip-components=1"</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Build and push:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman build -f ./10-update-service-dockerfile -t registry.dsal:8443/openshift/graph-data:latest</code></pre>
+</div>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman push --authfile pull-secret-all.json registry.dsal:8443/openshift/graph-data:latest</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create UpdateService object (<code>10-update-service-UpdateService.yaml</code>)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: updateservice.operator.openshift.io/v1
+kind: UpdateService
+metadata:
+  name: service
+  namespace: openshift-update-service
+spec:
+  replicas: 2
+  graphDataImage: registry.dsal:8443/openshift/graph-data:latest
+  releases: registry.dsal:8443/mirror/openshift/release-images</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>and apply:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 10-update-service-UpdateService.yaml</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Now, update clusterVersion with graph url</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POLICY_ENGINE_GRAPH_URI="$(oc -n "openshift-update-service" get -o jsonpath='{.status.policyEngineURI}/api/upgrades_info/v1/graph{"\n"}' updateservice "service")"
+
+oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>as an alternative, if the update service is in the same cluster, using k8s service dns:</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POLICY_ENGINE_GRAPH_URI="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph"
+
+oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To check everything is working:</p>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ oc get pod -n openshift-update-service
+NAME                                     READY   STATUS    RESTARTS   AGE
+service-86ff6b6df-82fn4                  2/2     Running   0          51m
+service-86ff6b6df-9fc7m                  2/2     Running   0          51m
+updateservice-operator-ccb64988d-f97v6   1/1     Running   0          17h
+
+$ oc adm upgrade
+Error while reconciling 4.11.20: the cluster operator insights has not yet successfully rolled out
+
+Upgradeable=False
+
+  Reason: MultipleReasons
+  Message: Cluster should not be upgraded between minor versions for multiple reasons: AdminAckRequired,InsightsNotUpgradeable
+  * Kubernetes 1.25 and therefore OpenShift 4.12 remove several APIs which require admin consideration. Please see the knowledge article <a href="https://access.redhat.com/articles/6955381" class="bare">https://access.redhat.com/articles/6955381</a> for details and instructions.
+  * Cluster operator insights should not be upgraded between minor versions: Unable to report: unable to build request to connect to Insights server: Post "https://console.redhat.com/api/ingress/v1/upload": dial tcp 84.53.185.163:443: i/o timeout
+
+Upstream: <a href="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph" class="bare">http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph</a>
+Channel: stable-4.11 (available channels: candidate-4.11, candidate-4.12, fast-4.11, fast-4.12, stable-4.11)
+No updates available. You may force an upgrade to a specific release image, but doing so may not be supported and may result in downtime or data loss.</code></pre>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="09-Cluster-Samples.html">Cluster Samples Operator</a></span>
+  <span class="next"><a href="11-Proxy.html">Cluster-wide Proxy</a></span>
+</nav>
+</article>
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <a class="rhd-logo" href="https://developers.redhat.com" target="_blank"></div>
+</footer>
+<script src="../_/js/vendor/clipboard.js"></script>
+<script src="../_/js/site.js"></script>
+<script async src="../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
