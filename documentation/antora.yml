@@ -1,5 +1,5 @@
 name: openshift-disconnected-workshop
-title: Openshift Disconnected Workshop
+title: OCP Disconnected Workshop
 version: master
 nav:
   - modules/ROOT/nav.adoc
