@@ -248,13 +248,60 @@
   <div class="content">
 <article class="doc">
 <h1 class="page">Setup</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>All our environment would be on a hypervisor. In this machine we will run:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A registry VM, where we will run different registry container solutions.</p>
+</li>
+<li>
+<p>A connected Openshift Deployment which later will become disconnected.</p>
+</li>
+<li>
+<p>A disconnected Openshift Deployment.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Additional details:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The Openshift clusters will be SNO (Single-Node Openshift) deployments, so they will have only one VM. (master+worker).</p>
+</li>
+<li>
+<p>We will use <code>kcli</code> tool (<a href="https://kcli.readthedocs.io/en/latest/" class="bare">https://kcli.readthedocs.io/en/latest/</a>) to deploy the registry VM and the Openshift Clusters</p>
+</li>
+<li>
+<p>Apart from the deployment of different registry solutions, most of the operations and commands will be executed directly from the hypervisor shell.</p>
+</li>
+<li>
+<p>To simplify we will use always root user.</p>
+</li>
+<li>
+<p>If we need a web browser, we will use <code>sshuttle</code> tool (<a href="https://sshuttle.readthedocs.io/en/stable/" class="bare">https://sshuttle.readthedocs.io/en/stable/</a>) to create a kind of "VPN" via SSH between our laptop/PC and the libvirtd network running on our Hypervisor</p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/environment.png" alt="Lab Environment" width="800">
+</div>
+</div>
+</div>
+</div>
 <div class="sect1">
 <h2 id="prerequisite"><a class="anchor" href="#prerequisite"></a>Prerequisites</h2>
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="prerequisite-binaries"><a class="anchor" href="#prerequisite-binaries"></a>kcli and binaries</h3>
 <div class="paragraph">
-<p>Connect with ssh to the machine and become root with <code>sudo su</code>. The rest of the workshop we will use <code>root</code> as default user.</p>
+<p>Connect via ssh to the hypervisor and become root with <code>sudo su</code>. The rest of the workshop we will use <code>root</code> as default user.</p>
 </div>
 <div class="ulist">
 <ul>
@@ -283,10 +330,22 @@ systemctl enable --now libvirtd</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create pool -p /mnt default</code></pre>
 </div>
 </div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Change <code>/mnt</code> for the directory where you have enough space (&gt;370GB)
+</td>
+</tr>
+</table>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p>Install kcli</p>
+<p>Install <code>kcli</code></p>
 </li>
 </ul>
 </div>
@@ -298,7 +357,7 @@ systemctl enable --now libvirtd</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p>Install some binaries (oc, opm, wget, podman ):</p>
+<p>Install some binaries (oc, kubectl, opm, wget, podman ):</p>
 </li>
 </ul>
 </div>
@@ -321,10 +380,10 @@ chmod +x /usr/local/bin/opm</code></pre>
 <div class="sect2">
 <h3 id="presequisites-sshuttle"><a class="anchor" href="#presequisites-sshuttle"></a>sshuttle</h3>
 <div class="paragraph">
-<p>To be able to access to VM network from our laptop we will use <code>sshuttle</code>. This software allow traffic through ssh protocol, similar to a VPN.</p>
+<p>To be able to access to VM network from our laptop/PC we will use <code>sshuttle</code>. This software allow traffic through ssh protocol, similar to a VPN.</p>
 </div>
 <div class="paragraph">
-<p>If you use fedora/rhel/centos:</p>
+<p>If you use Fedora/RHEL/CentOS:</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
@@ -332,48 +391,51 @@ chmod +x /usr/local/bin/opm</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>To open a <strong>VPN</strong> :</p>
+<p>To open a "<strong>VPN</strong>" execute from your laptop/PC:</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r azureuser@&lt;public ip of your machine&gt; 192.168.122.0/24  --ssh-cmd 'ssh -i &lt;your certificate&gt;.pem'</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>This command will route the traffic from our laptop/PC to the network <code>192.168.122.0/24</code> (libvirtd network in our hypervisor) via ssh connection.</p>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="registryvm"><a class="anchor" href="#registryvm"></a>Registry virtual machine</h2>
+<h2 id="registryvm"><a class="anchor" href="#registryvm"></a>Registry Virtual Machine</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Now we have our machine prepared to create VMs with libvirtd. Connect to your hypervisor and become root.</p>
 </div>
 <div class="paragraph">
-<p>The first will be our <code>registry</code> machine. In this machine we will test 4 different solutions to host or cache Openshift images:</p>
+<p>The first VM will be our <code>registry</code> machine. In this VM we will test 4 different solutions to host or cache Openshift images:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Clasic Registry v2</p>
+<p>Docker Registry v2 with the container image <code>registry:v2</code></p>
 </li>
 <li>
-<p>Registry with <code>mirror-registry</code>: A software provided by Red Hat based on Quay</p>
+<p>Registry with <code>mirror-registry</code>: a software provided by Red Hat based on Quay</p>
 </li>
 <li>
-<p>Basic installation of Quay. A minimal non-prod installation of Quay to be able to configure the mirror function in an org.</p>
+<p>Basic installation of Quay: a minimal non-prod installation of Quay, to be able to enable and configure the mirror function in an org.</p>
 </li>
 <li>
-<p>Registry cache. A open source software created by manuvaldi that allow caching of images from different repositories in a simple way.</p>
+<p>Registry cache. An open source software created by @manuvaldi (<a href="https://github.com/manuvaldi/registry-cache" class="bare">https://github.com/manuvaldi/registry-cache</a>) that allows caching of images from different repositories in a simple way.</p>
 </li>
 </ol>
 </div>
 <div class="paragraph">
-<p>Follow next steps to create all:</p>
+<p>Follow next steps to create all registries:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Download fedora image with kcli</p>
+<p>Download Fedora image with <code>kcli</code></p>
 </li>
 </ul>
 </div>
@@ -463,7 +525,7 @@ setenforce 0</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p>We can use the guide <a href="https://www.redhat.com/en/blog/openshift-private-registry" class="bare">https://www.redhat.com/en/blog/openshift-private-registry</a> to create a registry. In the following lines the "summary":</p>
+<p>We can use the guide in the blog post <a href="https://www.redhat.com/en/blog/openshift-private-registry" class="bare">https://www.redhat.com/en/blog/openshift-private-registry</a> to create a registry. In the following lines the "summary" :)</p>
 </li>
 </ul>
 </div>
