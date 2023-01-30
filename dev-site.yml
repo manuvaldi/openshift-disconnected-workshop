@@ -3,7 +3,7 @@ runtime:
 
 site:
   title: Openshift Disconnected Workshop(Dev Mode)
-  url: http://localhost:3000/rhs-build-course/index.html
+  url: http://localhost:3000/openshift-disconnected-workshop/index.html
   start_page: openshift-disconnected-workshop::index.adoc
 
 content:

@@ -1,1 +1,1 @@
-Check the build courseware https://redhat-scholars.github.io/build-course[documentation]  on how folder structure, how to use macros and other gotchas
+This is the repository for the Openshift Disconnected Workshop available in https://manuvaldi.github.io/openshift-disconnected-workshop[OCP Disconnected Workshop]

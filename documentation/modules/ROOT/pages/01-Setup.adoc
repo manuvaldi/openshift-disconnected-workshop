@@ -1,13 +1,31 @@
 = Setup
 include::_attributes.adoc[]
 
+
+All our environment would be on a hypervisor. In this machine we will run:
+
+* A registry VM, where we will run different registry container solutions.
+* A connected Openshift Deployment which later will become disconnected.
+* A disconnected Openshift Deployment.
+
+Additional details:
+
+* The Openshift clusters will be SNO (Single-Node Openshift) deployments, so they will have only one VM. (master+worker).
+* We will use `kcli` tool (https://kcli.readthedocs.io/en/latest/) to deploy the registry VM and the Openshift Clusters
+* Apart from the deployment of different registry solutions, most of the operations and commands will be executed directly from the hypervisor shell.
+* To simplify we will use always root user.
+* If we need a web browser, we will use `sshuttle` tool (https://sshuttle.readthedocs.io/en/stable/) to create a kind of "VPN" via SSH between our laptop/PC and the libvirtd network running on our Hypervisor 
+
+image::environment.png[Lab Environment, 800]
+
+
 [#prerequisite]
 == Prerequisites
 
 [#prerequisite-binaries]
 === kcli and binaries
 
-Connect with ssh to the machine and become root with `sudo su`. The rest of the workshop we will use `root` as default user.
+Connect via ssh to the hypervisor and become root with `sudo su`. The rest of the workshop we will use `root` as default user.
 
 - Install libvirtd
 
@@ -28,7 +46,9 @@ systemctl enable --now libvirtd
 kcli create pool -p /mnt default
 ----
 
-- Install kcli
+IMPORTANT: Change `/mnt` for the directory where you have enough space (>370GB)
+
+- Install `kcli`
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -36,7 +56,7 @@ kcli create pool -p /mnt default
 curl https://raw.githubusercontent.com/karmab/kcli/main/install.sh | sudo bash
 ----
 
-- Install some binaries (oc, opm, wget, podman ):
+- Install some binaries (oc, kubectl, opm, wget, podman ):
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -57,9 +77,9 @@ chmod +x /usr/local/bin/opm
 [#presequisites-sshuttle]
 === sshuttle
 
-To be able to access to VM network from our laptop we will use `sshuttle`. This software allow traffic through ssh protocol, similar to a VPN.
+To be able to access to VM network from our laptop/PC we will use `sshuttle`. This software allow traffic through ssh protocol, similar to a VPN.
 
-If you use fedora/rhel/centos:
+If you use Fedora/RHEL/CentOS:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -67,29 +87,30 @@ If you use fedora/rhel/centos:
 sudo dnf install -y sshuttle
 ----
 
-To open a *VPN* :
+To open a "*VPN*" execute from your laptop/PC:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 sshuttle -r azureuser@<public ip of your machine> 192.168.122.0/24  --ssh-cmd 'ssh -i <your certificate>.pem'
 ----
+This command will route the traffic from our laptop/PC to the network `192.168.122.0/24` (libvirtd network in our hypervisor) via ssh connection.
 
 [#registryvm]
-== Registry virtual machine
+== Registry Virtual Machine
 
 Now we have our machine prepared to create VMs with libvirtd. Connect to your hypervisor and become root.
 
-The first will be our `registry` machine. In this machine we will test 4 different solutions to host or cache Openshift images:
+The first VM will be our `registry` machine. In this VM we will test 4 different solutions to host or cache Openshift images:
 
-. Clasic Registry v2
-. Registry with `mirror-registry`: A software provided by Red Hat based on Quay
-. Basic installation of Quay. A minimal non-prod installation of Quay to be able to configure the mirror function in an org.
-. Registry cache. A open source software created by manuvaldi that allow caching of images from different repositories in a simple way.
+. Docker Registry v2 with the container image `registry:v2`
+. Registry with `mirror-registry`: a software provided by Red Hat based on Quay
+. Basic installation of Quay: a minimal non-prod installation of Quay, to be able to enable and configure the mirror function in an org.
+. Registry cache. An open source software created by @manuvaldi (https://github.com/manuvaldi/registry-cache) that allows caching of images from different repositories in a simple way.
 
-Follow next steps to create all:
+Follow next steps to create all registries:
 
-- Download fedora image with kcli
+- Download Fedora image with `kcli`
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -150,7 +171,7 @@ sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
 setenforce 0
 ----
 
-- We can use the guide https://www.redhat.com/en/blog/openshift-private-registry to create a registry. In the following lines the "summary":
+- We can use the guide in the blog post https://www.redhat.com/en/blog/openshift-private-registry to create a registry. In the following lines the "summary" :)
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
