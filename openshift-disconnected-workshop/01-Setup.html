@@ -301,46 +301,22 @@
 <div class="sect2">
 <h3 id="prerequisite-binaries"><a class="anchor" href="#prerequisite-binaries"></a>kcli and binaries</h3>
 <div class="paragraph">
-<p>Connect via ssh to the hypervisor and become root with <code>sudo su</code>. The rest of the workshop we will use <code>root</code> as default user.</p>
+<p>Connect via ssh to the <strong>hypervisor</strong> and become root with <code>sudo su</code>. The rest of the workshop we will use <code>root</code> as default user.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Install libvirtd</p>
+<p>Install libvirtd and basic binaries</p>
 </li>
 </ul>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">yum -y install libvirt libvirt-daemon-driver-qemu qemu-kvm
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">yum -y install libvirt libvirt-daemon-driver-qemu qemu-kvm dnf nano jq vim wget podman skopeo
 usermod -aG qemu,libvirt $(id -un)
 newgrp libvirt
 systemctl enable --now libvirtd</code></pre>
 </div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Create a pool with the additional disk mounted in <code>/mnt</code></p>
-</li>
-</ul>
-</div>
-<div class="listingblock console-input">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create pool -p /mnt default</code></pre>
-</div>
-</div>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-Change <code>/mnt</code> for the directory where you have enough space (&gt;370GB)
-</td>
-</tr>
-</table>
 </div>
 <div class="ulist">
 <ul>
@@ -357,14 +333,45 @@ Change <code>/mnt</code> for the directory where you have enough space (&gt;370G
 <div class="ulist">
 <ul>
 <li>
-<p>Install some binaries (oc, kubectl, opm, wget, podman ):</p>
+<p>Create a pool with the additional disk mounted in <code>/mnt</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Probably you may format and mount extra disk to <code>/mnt</code> path. Example:</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkfs.xfs -f /dev/sdb1 &amp;&amp; mount /dev/sdb1 /mnt</code></pre>
+</div>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create pool -p /mnt default</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Change <code>/mnt</code> for the directory where you have enough space (&gt;370GB).
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install some binaries (oc, kubectl and opm):</p>
 </li>
 </ul>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">dnf -y -q install wget podman
-wget <a href="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz" class="bare">https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz</a>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">wget <a href="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz" class="bare">https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz</a>
 tar xvfz openshift-client-linux.tar.gz
 mv oc /usr/local/bin/
 mv kubectl /usr/local/bin/
@@ -395,11 +402,19 @@ chmod +x /usr/local/bin/opm</code></pre>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r azureuser@&lt;public ip of your machine&gt; 192.168.122.0/24  --ssh-cmd 'ssh -i &lt;your certificate&gt;.pem'</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r root@&lt;public ip of your machine&gt; 192.168.122.0/24</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This command will route the traffic from our laptop/PC to the network <code>192.168.122.0/24</code> (libvirtd network in our hypervisor) via ssh connection.</p>
+<p>or if you connect using certificates:</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r root@&lt;public ip of your machine&gt; 192.168.122.0/24  --ssh-cmd 'ssh -i &lt;your certificate&gt;.pem'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command will route the traffic from <strong>YOUR LAPTOP/PC</strong> to the network <code>192.168.122.0/24</code> (libvirtd network in our hypervisor) via ssh connection.</p>
 </div>
 </div>
 </div>
@@ -430,7 +445,19 @@ chmod +x /usr/local/bin/opm</code></pre>
 </ol>
 </div>
 <div class="paragraph">
-<p>Follow next steps to create all registries:</p>
+<p>Follow next steps to create a VM containing all registries servers:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Before create any VM we will generate a key pair for ssh</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh-keygen -t rsa</code></pre>
+</div>
 </div>
 <div class="ulist">
 <ul>
@@ -469,7 +496,7 @@ chmod +x /usr/local/bin/opm</code></pre>
 ---------------------------------------------------------------------------------------------+
 |   Name   | Status |       Ip      |                 Source                |  Plan |   Profile    |
 ---------------------------------------------------------------------------------------------+
-| registry |   up   | 192.168.122.7 | Fedora-Cloud-Base-37-1.7.x86_64.qcow2 | kvirt | fedoralatest |
+| registry |   up   | 192.168.122.X | Fedora-Cloud-Base-37-1.7.x86_64.qcow2 | kvirt | fedoralatest |
 ---------------------------------------------------------------------------------------------+</code></pre>
 </div>
 </div>
@@ -482,7 +509,7 @@ chmod +x /usr/local/bin/opm</code></pre>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "192.168.122.7 registry.dsal" &gt;&gt; /etc/hosts</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "192.168.122.X registry.dsal" &gt;&gt; /etc/hosts</code></pre>
 </div>
 </div>
 <div class="quoteblock">
@@ -504,10 +531,31 @@ chmod +x /usr/local/bin/opm</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl reload libvirtd</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Now we will connect to the registry VM and we will start to install the different containers registry solutions:</p>
+</div>
 <div class="sect2">
 <h3 id="registryvm-registryv2"><a class="anchor" href="#registryvm-registryv2"></a>Create registry with registry:v2 image (classic)</h3>
 <div class="paragraph">
 <p>Connect to registry instance with <code>kcli ssh registry</code> and then (uso <code>sudo su</code> again):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>connect to VM:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ kcli ssh registry
+
+[fedora@registry ~]$ sudo su
+[root@registry fedora]#</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and now from the prompt of the registry VM do:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -566,9 +614,44 @@ cat &lt;&lt;EOF &gt; ~/registry-secret.json
 EOF</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>After this step we have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Our Fedora VM updated</p>
+</li>
+<li>
+<p>Certificates for <code>registry.dsal</code> host, which we will use for all our registry servers, in the path <code>/data/registry/certs/</code>.</p>
+</li>
+<li>
+<p>A <code>registry:v2</code> container.</p>
+</li>
+<li>
+<p>A htpasswd file with the credentials</p>
+</li>
+<li>
+<p>A json file with the credentials to accesss to this registry.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>We can see our containter running:</p>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">[root@registry fedora]# podman ps
+CONTAINER ID  IMAGE                         COMMAND               CREATED         STATUS         PORTS       NAMES
+60fe656511eb  docker.io/library/registry:2  /etc/docker/regis...  15 seconds ago  Up 15 seconds              ocp-registry</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="registryvm-mirror-registry"><a class="anchor" href="#registryvm-mirror-registry"></a>Create registry with mirror-registry</h3>
+<div class="paragraph">
+<p>From the registry VM do:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
@@ -580,36 +663,46 @@ EOF</code></pre>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">dnf -y -q install podman acl wget
 mkdir -p ~/mirror-registry &amp;&amp; cd ~/mirror-registry
-wget <a href="https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.2.9/mirror-registry.tar.gz" class="bare">https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.2.9/mirror-registry.tar.gz</a>
+wget <a href="https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.3.2/mirror-registry.tar.gz" class="bare">https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.3.2/mirror-registry.tar.gz</a>
 tar xvfz mirror-registry.tar.gz</code></pre>
 </div>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Create registry</p>
+<p>Create the mirror-registry executing the next command:</p>
 </li>
 </ul>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./mirror-registry install --quayHostname registry.dsal --quayRoot /data/mirror-registry --initUser registry --initPassword redhat12345678 --sslCert /data/registry/certs/registry.crt --sslKey /data/registry/certs/registry.key</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./mirror-registry install \
+  --quayHostname registry.dsal \
+  --quayRoot /data/mirror-registry \
+  --initUser registry \
+  --initPassword redhat12345678 \
+  --sslCert /data/registry/certs/registry.crt \
+  --sslKey /data/registry/certs/registry.key</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This will run a registry with url:</p>
+<p>As you can see we reused the certificates and the same user/password.</p>
+</div>
+<div class="paragraph">
+<p>After some time, A a mirror-registry registry will be running with the url:</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">....
-Quay is available at <a href="https://registry.dsal:8443" class="bare">https://registry.dsal:8443</a> with credentials (registry, redhat12345678)</code></pre>
+INFO[2023-03-14 15:02:25] Quay installed successfully, permanent data is stored in /data/mirror-registry
+INFO[2023-03-14 15:02:25] Quay is available at <a href="https://registry.dsal:8443" class="bare">https://registry.dsal:8443</a> with credentials (registry, redhat12345678)</code></pre>
 </div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="registryvm-quay-standalone"><a class="anchor" href="#registryvm-quay-standalone"></a>Create Registry Quay standalone with proxy cache/mirror functionality</h3>
 <div class="paragraph">
-<p>First of all go to <code><a href="https://console.redhat.com/openshift/downloads#tool-pull-secret" class="bare">https://console.redhat.com/openshift/downloads#tool-pull-secret</a></code> and copy a Openshift pull secret to <code>~/pull-secret.json</code></p>
+<p>First of all, open a browser in your laptop and go to <code><a href="https://console.redhat.com/openshift/downloads#tool-pull-secret" class="bare">https://console.redhat.com/openshift/downloads#tool-pull-secret</a></code> and copy a Openshift pull secret to <code>~/pull-secret.json</code></p>
 </div>
 <div class="ulist">
 <ul>
@@ -626,7 +719,7 @@ Quay is available at <a href="https://registry.dsal:8443" class="bare">https://r
 <div class="ulist">
 <ul>
 <li>
-<p>Prepare and run postgresql and redis containers. Then we will run a quay config container to be able to create a configuration for our "mini" quay.</p>
+<p>Prepare and run postgresql and redis containers. Then, we will run a Quay Config container to be able to create a configuration for our "mini" Quay deployment.</p>
 </li>
 </ul>
 </div>
@@ -663,7 +756,7 @@ podman run --rm -it --name quay_config -p 80:8080 -p 443:8443 registry.redhat.io
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-the last command run the quay config container. We can access to the web ui from our laptop browser. It is possible because you are running sshuttle VPN.
+The last command run the quay config container and leave it in foreground. We can access to the web ui from our laptop browser. It is possible because you are running <code>sshuttle</code> VPN.
 </td>
 </tr>
 </table>
@@ -675,7 +768,7 @@ the last command run the quay config container. We can access to the web ui from
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-take note of passwords used for the next step ;)
+take note of passwords (<code>secret</code>) used for the next step ;)
 </td>
 </tr>
 </table>
@@ -693,6 +786,26 @@ take note of passwords used for the next step ;)
 </li>
 <li>
 <p>Use IP of <code>registry</code> machine for postgres and redis connection</p>
+<div class="ulist">
+<ul>
+<li>
+<p>PostgreSQL config:</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/postgresql-config.png" alt="Postgres Config" width="800">
+</div>
+</div>
+</li>
+<li>
+<p>Redis config:</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/redis-config.png" alt="Redis Config" width="800">
+</div>
+</div>
+</li>
+</ul>
+</div>
 </li>
 <li>
 <p>All passwords and port are in the script. look before asking!!!</p>
@@ -703,36 +816,39 @@ take note of passwords used for the next step ;)
 </ul>
 </div>
 <div class="paragraph">
-<p>You can stop config container with Contro+C</p>
+<p>Now, validate config pushing the ending button and download de config. After that, you can stop config container with Control+C.</p>
+</div>
+<div class="paragraph">
+<p>We need to leave the config in the registry VM, so we will copy de config bundle to hypervisor, and from the hypervisor to registry VM:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Download quay config and copy it to registry machine</p>
+<p>Download quay config and copy it to registry machine. From your laptop/PC run:</p>
 </li>
 </ul>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">scp -i testlab01_key.pem quay-config.tar.gz azureuser@20.93.161.196:</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">scp quay-config.tar.gz root@&lt;fqdn/ip of your hypervisor&gt;:</code></pre>
 </div>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>and then from hypervisor to the registry machine</p>
+<p>and then copy from hypervisor to the registry VM:</p>
 </li>
 </ul>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli scp /home/azureuser/quay-config.tar.gz registry:/tmp/</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli scp /root/quay-config.tar.gz registry:/tmp/</code></pre>
 </div>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Prepare config and storage data dirs</p>
+<p>Now, already in the Registry VM, prepare config and storage data dirs</p>
 </li>
 </ul>
 </div>
@@ -772,43 +888,50 @@ podman run -d  -p 80:8080 -p 443:8443  \
 <div class="ulist">
 <ul>
 <li>
-<p>Enter in web UI interface, create user <code>registry/redhat12345678</code> and create a new organization <code>cache-quayio</code> and configure mirror with next values:</p>
-</li>
+<p>Enter in web UI interface, <strong>create</strong> user <code>registry/redhat12345678</code> and create a new organization <code>cache-quayio</code>, and in the organization settings configure mirror with next values:</p>
+<div class="ulist">
+<ul>
 <li>
 <p>Remote Registry: <code>quay.io</code></p>
 </li>
 <li>
 <p>Remote Registry Username, extract from pull-secret:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret.json | jq  -r '.auths["quay.io"].auth |select (.!=null)' | base64 -d | awk -F':' '{print $1}'</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Remote Registry Password:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret.json | jq  -r '.auths["quay.io"].auth |select (.!=null)' | base64 -d | awk -F':' '{print $2}'</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+<div class="paragraph">
+<p>Like this:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/proxy-cache-config.png" alt="Quay Proxy Cache Config" width="800">
+</div>
+</div>
+</li>
 <li>
 <p>and Save</p>
+</li>
+</ul>
+</div>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect2">
 <h3 id="registryvm-cachecontainer"><a class="anchor" href="#registryvm-cachecontainer"></a>Creating Registry Cache with registry-cache container</h3>
+<div class="paragraph">
+<p>From Registry VM do:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
@@ -892,7 +1015,9 @@ mkdir -p /data/registry-cache/{auth,data}</code></pre>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret.json | jq  &gt; ~/pull-secret-all.json</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret.json | jq  &gt; ~/pull-secret-all.json
+
+vi  ~/pull-secret-all.json</code></pre>
 </div>
 </div>
 <div class="ulist">
@@ -927,13 +1052,14 @@ mkdir -p /data/registry-cache/{auth,data}</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p>Copy it again to <code>.docker</code> dir</p>
+<p>Copy it again to <code>.docker</code> dir (and to <code>/tmp</code> directory for a later use )</p>
 </li>
 </ul>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cp ~/pull-secret-all.json ~/.docker/config.json</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cp ~/pull-secret-all.json ~/.docker/config.json
+cp ~/pull-secret-all.json /tmp/</code></pre>
 </div>
 </div>
 <div class="paragraph">

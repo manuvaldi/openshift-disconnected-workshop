@@ -251,24 +251,24 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now, we have our cluster disconnected. Now we will upgrade using the different registry types deployed in previous sections:</p>
+<p>We have our cluster totally disconnected. Now, we will upgrade using the different registry types deployed in previous sections:</p>
 </div>
 <div class="paragraph">
-<p>4 registries:</p>
+<p>We have 4 registries:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>A registry v2 with 4.9.10 in registry.dsal:5000</p>
+<p>A registry:v2 with <strong>4.9.10</strong> release mirrored in registry.dsal:5000</p>
 </li>
 <li>
-<p>A registry mirror-registry method with 4.9.10 and 4.9.22 in registry.dsal:8443</p>
+<p>A registry mirror-registry method with <strong>4.9.10</strong> and <strong>4.9.22</strong> releases mirrored in registry.dsal:8443</p>
 </li>
 <li>
-<p>A registry cache with a minimal/basic Quay deployment in registry.dsal (443). it can cache any release of Openshift. We will use it for 4.10.20 release.</p>
+<p>A registry cache with a minimal/basic Quay deployment in registry.dsal (443)</p>
 </li>
 <li>
-<p>A registry cache with a registry-cache in registry.dsal:6443. It can cache any release of Openshift. We will use it for 4.11.20 release.</p>
+<p>A registry cache with a registry-cache in registry.dsal:6443</p>
 </li>
 </ul>
 </div>
@@ -278,21 +278,21 @@
 <div class="paragraph">
 <p>4.9.10 &#8594; 4.9.22 &#8594; 4.10.20 &#8594; 4.11.20</p>
 </div>
+<div class="paragraph">
+<p>We are using currently the 4.9.10 release in our disconnected cluster, so let&#8217;s start the upgrades. The first one to 4.9.22.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="upgrade1"><a class="anchor" href="#upgrade1"></a>Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Our 4.9.22 release images are in the registry (mirror-registry) at url <code>registry.dsal:8443</code></p>
+<p>In the "Mirroring Openshift Images" we did a mirror of 4.9.22 release images. Our 4.9.22 release images are in the registry (mirror-registry) at the url <code>registry.dsal:8443</code>. To be able to upgrade we need to "tell" to the cluster where it will find images (mirroring config):</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
 <p>Create new <code>ImageContentSourcePolicy</code> (<code>5-icsp-registry-mirror-8443.yaml</code>)</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operator.openshift.io/v1alpha1
@@ -309,13 +309,9 @@ spec:
     source: quay.io/openshift-release-dev/ocp-v4.0-art-dev</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>and apply</p>
 </li>
-</ul>
-</div>
+<li>
+<p>And apply</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 5-icsp-registry-mirror-8443.yaml</code></pre>
@@ -328,49 +324,40 @@ spec:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-don&#8217;t worry for applying different <code>ImageContentSourcePolicy</code> objects in the cluster. The configuration is incremental. If an image isn&#8217;t found in a mirror, the engine tries in the next mirror registry configured.
+don&#8217;t worry for applying different <code>ImageContentSourcePolicy</code> objects in the cluster. The configuration is incremental. If an image isn&#8217;t found in a mirror, the engine tries to find it in the next mirror registry configured.
 </td>
 </tr>
 </table>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Upgrade cluster from 4.9.10 to 4.9.22</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm upgrade --to-image=registry.dsal:8443/mirror/openshift/release-images:4.9.22-x86_64 --force --allow-explicit-upgrade</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Check registry logs to watch if cluster is requesting image to the registry</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Check registry logs to watch if cluster is requesting images to the registry</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman logs --tail=10 -f quay-app</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>You can monitor the upgrade from CLI:</p>
 </li>
-</ul>
-</div>
+<li>
+<p>You can also monitor the upgrade from CLI:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get clusterversion; oc get co</code></pre>
 </div>
 </div>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>Wait until all <code>ClusterOperators</code> are available and ready</p>
+<p>Upgrade process take some time. Wait until all <code>ClusterOperators</code> are available and Ready.</p>
 </div>
 </div>
 </div>
@@ -384,9 +371,6 @@ don&#8217;t worry for applying different <code>ImageContentSourcePolicy</code> o
 <ul>
 <li>
 <p>Create the new <code>ImageContentSourcePolicy</code> (<code>5-icsp-registry-cache-443.yaml</code>)</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operator.openshift.io/v1alpha1
@@ -403,53 +387,40 @@ spec:
     source: quay.io/openshift-release-dev/ocp-v4.0-art-dev</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>and apply</p>
 </li>
-</ul>
-</div>
+<li>
+<p>and apply it</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 5-icsp-registry-mirror-443.yaml</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 5-icsp-registry-cache-443.yaml</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Upgrade cluster from 4.9.22 to 4.10.20</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm upgrade --to-image=registry.dsal/cache-quayio/openshift-release-dev/ocp-release:4.10.20-x86_64 --force --allow-explicit-upgrade</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>check registry logs</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Check registry logs</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman logs --tail=10 -f quay-standalone-basic</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Check clusteroperators</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Check <code>ClusterOperators</code> and monitor the upgrade from CLI:</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get co</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get clusterversion; oc get co</code></pre>
 </div>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -500,7 +471,7 @@ spec:
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete ImageContentSourcePolicy icsp-quay-cache-443</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete ImageContentSourcePolicy icsp-quay-mirror-443</code></pre>
 </div>
 </div>
 <div class="ulist">

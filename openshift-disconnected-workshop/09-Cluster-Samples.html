@@ -249,7 +249,7 @@
 <article class="doc">
 <h1 class="page">Cluster Samples Operator in Disconnected</h1>
 <div class="paragraph">
-<p>In a disconnected environment, the samples operator is <code>Removed</code>. To be able to get available the samples, and change to <code>Managed</code>, we need to mirror and change these images:</p>
+<p>In a disconnected environment, the samples operator is removed. In order to make the samples available and transition to the <code>Managed</code> state, we must mirror and modify the corresponding images.</p>
 </div>
 <div class="paragraph">
 <p>The images to mirror are in a configmap in Openshift:</p>
@@ -260,15 +260,12 @@
 </div>
 </div>
 <div class="paragraph">
-<p>Steps:</p>
+<p>Steps to mirror:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Create a mapping.txt with this script (<code>9-samples-mirroring.sh</code>):</p>
-</li>
-</ul>
-</div>
+<p>Create a <code>mapping.txt</code> with this script (<code>9-samples-mirroring.sh</code>). This script extract images from the configmap and create a <code>mapping.txt</code> file:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">pullsecret=$1
@@ -284,7 +281,7 @@ for key in `echo $json | jq --raw-output '.data | keys[]'`; do
   echo "IS: $key"
   echo "Image: $image"
   echo "Path: $urlpath"
-  echo "$key: '${dstregistry}${urlpath}'`" &gt;&gt; samples-configmap-data.txt
+  echo "$key: '${dstregistry}${urlpath}'" &gt;&gt; samples-configmap-data.txt
   if echo $urlpath | grep -q -v ":"; then
     continue
   fi
@@ -296,43 +293,45 @@ sort mapping.txt.tmp | uniq &gt; mapping.txt
 rm -Rf mapping.txt.tmp</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>you can execute it like this:</p>
-</div>
+</li>
+<li>
+<p>and execute it like this:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sh 9-samples-mirroring.sh ~/pull-secret-all.json</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Mirror with oc (or oc-mirror if you wish, you know how to do it ;) )</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Mirror with oc (or as an alternative with <code>oc-mirror</code> if you wish, you know how to do it ;) )</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc image mirror --skip-multiple-scopes=true --continue-on-error --insecure=true -a ./pull-secret-all.json -f mapping.txt</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Import CA from regitry</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Import the CA certificate of the registries (We have the <code>ca.crt</code> in the home directory because we downloaded it in the "Mirror Openshift Images" chapter) and add it as a trusted CA:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create configmap custom-ca-registry --from-file=registry.dsal..8443=ca.crt -n openshift-config
-configmap/custom-ca-registry created
 
 oc patch image.config.openshift.io/cluster --patch '{"spec":{"additionalTrustedCA":{"name":"custom-ca-registry"}}}' --type=merge</code></pre>
 </div>
 </div>
+</li>
+<li>
+<p>Probably your Samples Operator is in state <code>Removed</code>. To enable it again execute:</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch config.samples.operator.openshift.io/cluster --patch  '{"spec":{"managementState":"Managed"}}' --type=merge</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>Now, you can see the samples in the Developer Console.</p>
+<p>Now, you can see the samples in the Developer Console (<a href="https://console-openshift-console.apps.lab-test-disconnected.lab.dsal/samples/ns/default" class="bare">https://console-openshift-console.apps.lab-test-disconnected.lab.dsal/samples/ns/default</a>)</p>
 </div>
 <nav class="pagination">
   <span class="prev"><a href="08-Insights-and-Telemetry.html">Insights and Telemetry services</a></span>

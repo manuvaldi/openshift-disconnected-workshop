@@ -249,33 +249,22 @@
 <article class="doc">
 <h1 class="page">Cluster Deployment</h1>
 <div class="paragraph">
-<p>We will use the Hypervisor to deploy cluster with <code>kcli</code>. Connect to it via ssh, become <code>root</code> and follow the steps. This first installation is a connected deployment. All images will be downloaded from Internet.</p>
+<p>We will use the Hypervisor to deploy cluster with <code>kcli</code>. <code>kcli</code> deploys an Agnostic installation Openshift in VMs of libvirtd.</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>This first installation is a connected deployment. All images will be downloaded from Internet.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>To do the deployment, connect to the Hypervisor via ssh, become <code>root</code>, and follow the next steps.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Install openshift tools</p>
-</li>
-</ul>
-</div>
-<div class="listingblock console-input">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">dnf -y -q install wget
-wget <a href="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz" class="bare">https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz</a>
-tar xvfz openshift-client-linux.tar.gz
-mv oc /usr/local/bin/
-mv kubectl /usr/local/bin/
-rm -f openshift-client-linux.tar.gz
-echo "export PATH=$PATH:/usr/local/bin/" &gt;&gt; ~/.bashrc</code></pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Copy pull secret (<code>pull-secret-all.json</code>) from <code>registry</code> VM to the hypervisor:</p>
-</li>
-</ul>
-</div>
+<p>The pull secret was downloaded into the registry VM. Now copy the pull secret (<code>pull-secret-all.json</code>) from <code>registry</code> VM to the hypervisor:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli scp registry:/tmp/pull-secret-all.json .</code></pre>
@@ -293,19 +282,15 @@ Copy before in the registry VM the pull-secret-all.json file to /tmp
 </tr>
 </table>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Deploy cluster with <code>kcli</code></p>
 </li>
-</ul>
-</div>
+<li>
+<p>Deploy cluster with <code>kcli</code> (in our case an Openshift SNO baremetal release 4.9.10)</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create kube openshift \
 -P ctlplanes=1 \
 -P workers=0 \
--P ctlplane_memory=16384 \
+-P ctlplane_memory=18432 \
 -P disk_size=120 \
 -P tag=4.9.10 \
 -P pull_secret=/root/pull-secret-all.json  \
@@ -315,28 +300,32 @@ Copy before in the registry VM the pull-secret-all.json file to /tmp
 kcli-ocp-dsal</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>kcli</code> download the proper Openshift installer, all images needed, create the <code>install-config</code>, VMs, directories and all necessary, and then it deploy an Openshift cluster by itself. It will take about 20', read the logs and be patient.
+</td>
+</tr>
+</table>
+</div>
+</li>
 <li>
 <p>Check cluster it&#8217;s working. Export <code>KUBECONFIG</code> variable:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KUBECONFIG=/root/.kcli/clusters/lab-test/auth/kubeconfig</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>And then</p>
-</li>
-</ul>
+<div class="paragraph">
+<p>and then</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># oc get clusterversion,nodes,co
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ oc get clusterversion,nodes,co
 NAME                                         VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
 clusterversion.config.openshift.io/version   4.9.10    True        False         65m     Cluster version is 4.9.10
 
@@ -377,6 +366,12 @@ clusteroperator.config.openshift.io/operator-lifecycle-manager-packageserver   4
 clusteroperator.config.openshift.io/service-ca                                 4.9.10    True        False         False      78m
 clusteroperator.config.openshift.io/storage                                    4.9.10    True        False         False      78m</code></pre>
 </div>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Now, we have an Openshift cluster SNO deployed and accesible. In the next section we will become it desconnected.</p>
 </div>
 <nav class="pagination">
   <span class="prev"><a href="01-Setup.html">Setup</a></span>

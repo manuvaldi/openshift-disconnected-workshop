@@ -249,15 +249,15 @@
 <article class="doc">
 <h1 class="page">Openshift Update Service disconnected</h1>
 <div class="paragraph">
+<p>The OpenShift Update Service (OSUS) builds a graph of update possibilities based on release images in the registry. The graph is based on recommended, tested update paths from a specific version. This info comes from Internet so to be able to get this service offline we need to do some changes:</p>
+</div>
+<div class="paragraph">
 <p>First of all, we need a to install Openshift Update Service Operator following next steps:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
 <p>Create a yaml file with the namespace, the operator group and de subscription (<code>10-update-service-operator.yaml</code>)</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">---
@@ -292,17 +292,16 @@ spec:
   name: "cincinnati-operator"</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Apply it</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 10-update-service-operator.yaml</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>It results:</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
@@ -311,31 +310,15 @@ operatorgroup.operators.coreos.com/update-service-operator-group created
 subscription.operators.coreos.com/update-service-subscription created</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Configure registry certificate to trusted store</p>
 </li>
-</ul>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-If you have one configmap in the object proxy/cluster, you must only modify the ConfigMap.
-</td>
-</tr>
-</table>
-</div>
+<li>
+<p>Configure registry certificate to trusted store. Create a file with the configmap (<code>10-my-registry-ca.yaml</code>). Substitute accordingly with the certificate in the <code>ca.crt</code> from the home directory.</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: my-registry-ca
+  name: custom-ca-registry
   namespace: openshift-config
 data:
   updateservice-registry: |
@@ -354,25 +337,25 @@ data:
     -----END CERTIFICATE-----</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>enable CA in proxy also (user-ca-bundle)</p>
 </li>
-</ul>
-</div>
+<li>
+<p>And apply it:</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch image.config.openshift.io/cluster --type=merge --patch='{"spec":{"additionalTrustedCA:":{"name":"my-registry-ca"}}}'</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 10-my-registry-ca.yaml</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
+<li>
+<p>enable CA in proxy also (user-ca-bundle)</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch image.config.openshift.io/cluster --type=merge --patch='{"spec":{"additionalTrustedCA:":{"name":"custom-ca-registry"}}}'</code></pre>
+</div>
+</div>
+</li>
 <li>
 <p>Create graph update image (<code>10-update-service-dockerfile</code>)</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-txt hljs" data-lang="txt">FROM registry.access.redhat.com/ubi8/ubi:8.1
@@ -382,30 +365,60 @@ RUN curl -L -o cincinnati-graph-data.tar.gz https://github.com/openshift/cincinn
 CMD exec /bin/bash -c "tar xvzf cincinnati-graph-data.tar.gz -C /var/lib/cincinnati/graph-data/ --strip-components=1"</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Build and push:</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman build -f ./10-update-service-dockerfile -t registry.dsal:8443/openshift/graph-data:latest
+
+podman push --authfile pull-secret-all.json registry.dsal:8443/openshift/graph-data:latest</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Another approach to generating an OUS-graph image is by including the <code>graph:true</code> option in the imageset config, which enables <code>oc-mirror</code> to create it. Something like this:
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+archiveSize: 1
+storageConfig:
+  registry:
+    imageURL: registry.dsal:8443/imagetset/mirror-disconnected:metadata
+    skipTLS: true
+mirror:
+  platform:
+    channels:
+    - name: stable-4.11
+      type: ocp
+      minVersion: 4.11.20
+      shortestPath: true
+    graph: true <i class="conum" data-value="1"></i><b>(1)</b>
+    architectures:
+    - amd64</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>This options will create an graph image for OUS. In our examples would be: <code>registry.dsal:8443/mirror/openshift/graph-image:latest</code></td>
+</tr>
+</table>
+</div>
 </li>
-</ul>
-</div>
-<div class="listingblock console-input">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman build -f ./10-update-service-dockerfile -t registry.dsal:8443/openshift/graph-data:latest</code></pre>
-</div>
-</div>
-<div class="listingblock console-input">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman push --authfile pull-secret-all.json registry.dsal:8443/openshift/graph-data:latest</code></pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
 <li>
-<p>Create UpdateService object (<code>10-update-service-UpdateService.yaml</code>)</p>
-</li>
-</ul>
-</div>
+<p>Now we will create an instance of the UpdateService object (CR from the Update Service Operator)(<code>10-update-service-UpdateService.yaml</code>)</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: updateservice.operator.openshift.io/v1
@@ -419,25 +432,17 @@ spec:
   releases: registry.dsal:8443/mirror/openshift/release-images</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>and apply:</p>
 </li>
-</ul>
-</div>
+<li>
+<p>and apply it:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 10-update-service-UpdateService.yaml</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Now, update clusterVersion with graph url</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POLICY_ENGINE_GRAPH_URI="$(oc -n "openshift-update-service" get -o jsonpath='{.status.policyEngineURI}/api/upgrades_info/v1/graph{"\n"}' updateservice "service")"
@@ -456,7 +461,7 @@ oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GR
 </div>
 </div>
 <div class="paragraph">
-<p>To check everything is working:</p>
+<p>Now, check everything is working:</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
@@ -467,18 +472,86 @@ service-86ff6b6df-9fc7m                  2/2     Running   0          51m
 updateservice-operator-ccb64988d-f97v6   1/1     Running   0          17h
 
 $ oc adm upgrade
-Error while reconciling 4.11.20: the cluster operator insights has not yet successfully rolled out
-
-Upgradeable=False
-
-  Reason: MultipleReasons
-  Message: Cluster should not be upgraded between minor versions for multiple reasons: AdminAckRequired,InsightsNotUpgradeable
-  * Kubernetes 1.25 and therefore OpenShift 4.12 remove several APIs which require admin consideration. Please see the knowledge article <a href="https://access.redhat.com/articles/6955381" class="bare">https://access.redhat.com/articles/6955381</a> for details and instructions.
-  * Cluster operator insights should not be upgraded between minor versions: Unable to report: unable to build request to connect to Insights server: Post "https://console.redhat.com/api/ingress/v1/upload": dial tcp 84.53.185.163:443: i/o timeout
+Cluster version is 4.11.20
 
 Upstream: <a href="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph" class="bare">http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph</a>
 Channel: stable-4.11 (available channels: candidate-4.11, candidate-4.12, fast-4.11, fast-4.12, stable-4.11)
 No updates available. You may force an upgrade to a specific release image, but doing so may not be supported and may result in downtime or data loss.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, there isn&#8217;t any version to upgrade. This is because our update service takes a look to the registry to discover releases. Great, isn&#8217;t it?</p>
+</div>
+</li>
+<li>
+<p>We are going to mirror a new Openshift release. Create a new imageset for <code>oc-mirror</code> (<code>10-update-service-imageset.yaml</code>)</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+archiveSize: 1
+storageConfig:
+  registry:
+    imageURL: registry.dsal:8443/imagetset/mirror-disconnected:metadata
+    skipTLS: true
+mirror:
+  platform:
+    channels:
+    - name: stable-4.11
+      type: ocp
+      minVersion: 4.11.20
+      shortestPath: true
+    architectures:
+    - amd64</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Mirror and apply and add/update (just in case) the ImageContentSourceFile:</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc-mirror --config=./10-update-service-imageset.yaml  docker://registry.dsal:8443/mirror</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Apply results folder:</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f oc-mirror-workspace/results-xxxxx/</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Now, if we execute <code>oc adm upgrade</code> we will see new version to upgrade:</p>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">Cluster version is 4.11.20
+
+Upgradeable=False
+
+  Reason: InsightsNotUpgradeable
+  Message: Cluster operator insights should not be upgraded between minor versions: Unable to report: unable to build request to connect to Insights server: Post "https://console.redhat.com/api/ingress/v1/upload": dial tcp 213.57.23.152:443: i/o timeout
+
+Upstream: <a href="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph" class="bare">http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph</a>
+Channel: stable-4.11 (available channels: candidate-4.11, candidate-4.12, fast-4.11, fast-4.12, stable-4.11)
+
+Recommended updates:
+
+  VERSION     IMAGE
+  4.11.31     registry.dsal:8443/mirror/openshift/release-images@sha256:5fbe52f0f89d72e4d28b2a40dc69174fe10cce0a99dc5caa6fcfbf4226e08919
+  4.11.30     registry.dsal:8443/mirror/openshift/release-images@sha256:8230ca19fea80ef02f255a9f92688aa2639f68739a2b69114bf9af06080f9edc
+  4.11.29     registry.dsal:8443/mirror/openshift/release-images@sha256:1105aa27f627a99a2b3a8b6257a12697b2033a44f1fa2af41491a8e66cd279ac
+  4.11.28     registry.dsal:8443/mirror/openshift/release-images@sha256:85238bc3eddb88e958535597dbe8ec6f2aa88aa1713c2e1ee7faf88d1fefdac0
+  4.11.27     registry.dsal:8443/mirror/openshift/release-images@sha256:65e71a774a18c1c191f28655ce245abeecd653e8215b75f87eb23ceadacd530d
+  4.11.26     registry.dsal:8443/mirror/openshift/release-images@sha256:1c3913a65b0a10b4a0650f54e545fe928360a94767acea64c0bd10faa52c945a
+  4.11.25     registry.dsal:8443/mirror/openshift/release-images@sha256:2adcf72e10e67ace02ade32467ff7e75680ec1c71545a038196e569dc3149ad0
+  4.11.24     registry.dsal:8443/mirror/openshift/release-images@sha256:36ee0fd41073248dc566350db67bd52d2bed6e1691ab11879379b462d740e721
+  4.11.22     registry.dsal:8443/mirror/openshift/release-images@sha256:6e16fe4b05385d8422529c0120aff73f55a55eff57581a0714443d92a87f1ce9
+  4.11.21     registry.dsal:8443/mirror/openshift/release-images@sha256:860cc37824074671c4cf76e02d224d243e670d2298e6dab8923ee391fbd0ae1c</code></pre>
 </div>
 </div>
 <nav class="pagination">

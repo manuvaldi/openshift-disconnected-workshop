@@ -251,7 +251,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>A part from Openshift services, there are pods which are continuosly updating. There are the Operators Catalogs. These are pod where are defined the Operators that you can see, for example, in the Operator Hub.</p>
+<p>A part from Openshift services, there are pods which are continuosly updating. They are the Operators Catalogs. These are pod where are defined the Operators that you can see, for example, in the Operator Hub.</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
@@ -272,13 +272,13 @@ openshift-marketplace   redhat-operators      Red Hat Operators     grpc   Red H
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Default catalogs with images mirrored and ImageContentSourcePolicy</p>
+<p>Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></p>
 </li>
 <li>
 <p>Default catalogs with images mirrored and Custom catalogs</p>
 </li>
 <li>
-<p>Custom catalog</p>
+<p>Build a custom catalog</p>
 </li>
 </ol>
 </div>
@@ -288,10 +288,10 @@ openshift-marketplace   redhat-operators      Red Hat Operators     grpc   Red H
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>with command oc</p>
+<p>with command <code>oc</code></p>
 </li>
 <li>
-<p>with oc-mirror</p>
+<p>with <code>oc-mirror</code></p>
 </li>
 </ol>
 </div>
@@ -303,6 +303,14 @@ openshift-marketplace   redhat-operators      Red Hat Operators     grpc   Red H
 <div class="sect1">
 <h2 id="catalogs"><a class="anchor" href="#catalogs"></a>Disconnected Catalogs</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>We have our new disconnected Openshift deployment. Export <code>KUBECONFIG</code> variable to point to it:</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KUBECONFIG=/root/.kcli/clusters/lab-test-disconnected/auth/kubeconfig</code></pre>
+</div>
+</div>
 <div class="paragraph">
 <p>If you check the operator catalogs pods in your cluster you will see:</p>
 </div>
@@ -329,9 +337,6 @@ marketplace-operator-7696c9454c-b4zwl   1/1     Running            2          18
 <ul>
 <li>
 <p>Mirror catalogs images using <code>oc-mirror</code>. Create a imageset file (<code>7-imageset-config-catalogs.yaml</code>):</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: ImageSetConfiguration
@@ -339,23 +344,9 @@ apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 10
 storageConfig:
   registry:
-    imageURL: registry.dsal:8443/imagetset/mirror:metadata
+    imageURL: registry.dsal:8443/imagetset/mirror-catalog:metadata
     skipTLS: true
 mirror:
-  platform:
-    channels:
-    - name: stable-4.10
-      type: ocp
-      minVersion: 4.9.10
-      maxVersion: 4.9.22
-      shortestPath: true
-    - name: stable-4.11
-      type: ocp
-      minVersion: 4.11.20
-      maxVersion: 4.11.20
-      shortestPath: true
-    architectures:
-    - amd64
   additionalImages:
   - name: registry.redhat.io/redhat/redhat-operator-index:v4.11
   - name: registry.redhat.io/redhat/redhat-marketplace-index:v4.11
@@ -363,25 +354,17 @@ mirror:
   - name: registry.redhat.io/redhat/certified-operator-index:v4.11</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Run mirror command</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc-mirror --config=./7-imageset-config-catalogs.yaml  docker://registry.dsal:8443/mirror</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Create a new registry.conf file because these images references are tags instead of digest:</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Create a new <code>registry.conf</code> file because these images (catalog images) references are tags instead of digest:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-txt hljs" data-lang="txt">[[registry]]
@@ -393,13 +376,9 @@ mirror:
 location = "registry.dsal:8443/mirror/redhat"</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Get base64 from this file:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat registry-conf-operators.txt | base64 -w0</code></pre>
@@ -410,13 +389,9 @@ location = "registry.dsal:8443/mirror/redhat"</code></pre>
 <pre>W1tyZWdpc3RyeV1dCiAgcHJlZml4ID0gIiIKICBsb2NhdGlvbiA9ICJyZWdpc3RyeS5yZWRoYXQuaW8vcmVkaGF0IgogIG1pcnJvci1ieS1kaWdlc3Qtb25seSA9IGZhbHNlCgpbW3JlZ2lzdHJ5Lm1pcnJvcl1dCmxvY2F0aW9uID0gInJlZ2lzdHJ5LmRzYWw6ODQ0My9taXJyb3IvcmVkaGF0Igo=</pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Create machine-config file <code>7-mc-99-operators-registries.yaml</code>:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: machineconfiguration.openshift.io/v1
@@ -438,28 +413,20 @@ spec:
         path: /etc/containers/registries.conf.d/99-operators-registries.conf</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>and apply it</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 7-mc-99-operators-registries.yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Now, wait for MachineConfigPool to be updated in all nodes and:</p>
+<p>Now, wait for <code>MachineConfigPool</code> to be updated in all nodes (It will reboot node(s)).</p>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Delete pods from openshift-markeplace namespace to force update</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete --all pods -n openshift-marketplace</code></pre>
@@ -470,7 +437,7 @@ spec:
 </div>
 <div class="listingblock console-output">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n openshift-marketplace
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ oc get pod -n openshift-marketplace
 NAME                                    READY   STATUS    RESTARTS   AGE
 certified-operators-fg98d               1/1     Running   0          15s
 community-operators-qf9jm               1/1     Running   0          15s
@@ -479,32 +446,34 @@ redhat-marketplace-nb7hw                1/1     Running   0          14s
 redhat-operators-qx9rd                  1/1     Running   0          14s</code></pre>
 </div>
 </div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Now we have all our catalogs running with mirrored images. Let&#8217;s go to the next method:</p>
+</div>
 </div>
 <div class="sect2">
-<h3 id="defaultmirrroredcustomcatalogs"><a class="anchor" href="#defaultmirrroredcustomcatalogs"></a>Default catalogs with images mirrored and Custom catalogs</h3>
+<h3 id="defaultmirrroredcustomcatalogs"><a class="anchor" href="#defaultmirrroredcustomcatalogs"></a>Default catalogs with images mirrored and custom catalogs</h3>
 <div class="paragraph">
-<p>The second method would be creating custom catalogs following next steps:</p>
+<p>The second method would be creating custom catalogs based on default ones.</p>
+</div>
+<div class="paragraph">
+<p>In the first method we did a mirror of the catalog images. We already have the images copied to our private registry, so we can simply create catalogs that point to these images. Follow the next steps:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
 <p>Disable default catalogs:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch OperatorHub cluster --type json \
     -p '[{"op": "add", "path": "/spec/disableAllDefaultSources", "value": true}]'</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Create new catalogs files <code>7-default-catalogsources.yaml</code>, just replacing public images for mirrored images in <code>registry.dsal:8443/mirror</code> registry:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
@@ -632,17 +601,16 @@ items:
         interval: 10m0s</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>and then apply:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 7-default-catalogsources.yaml</code></pre>
 </div>
+</div>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>Now, we can see our custom catalogs based on default catalogs running:</p>
@@ -655,7 +623,14 @@ marketplace-operator-6f9748c96f-bwlkq   1/1     Running   0          10m
 mirror-certified-operators-6dnw9        1/1     Running   0          71s
 mirror-community-operators-cx84l        1/1     Running   0          71s
 mirror-redhat-marketplace-ct22n         1/1     Running   0          71s
-mirror-redhat-operators-4n2q8           1/1     Running   0          71s</code></pre>
+mirror-redhat-operators-4n2q8           1/1     Running   0          71s
+
+$ oc get catalogsource -A
+NAMESPACE               NAME                         DISPLAY                      TYPE   PUBLISHER   AGE
+openshift-marketplace   mirror-certified-operators   Mirror Certified Operators   grpc   Custom      91s
+openshift-marketplace   mirror-community-operators   Mirror Community Operators   grpc   Custom      91s
+openshift-marketplace   mirror-redhat-marketplace    Mirror Red Hat Marketplace   grpc   Custom      91s
+openshift-marketplace   mirror-redhat-operators      Mirror Red Hat Operators     grpc   Custom      91s</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -670,38 +645,37 @@ Take note our catalogs have prefix <code>mirror-*</code>
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>Let&#8217;s go to the third method:</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="customcatalog"><a class="anchor" href="#customcatalog"></a>Custom catalog</h3>
 <div class="paragraph">
-<p>The above 2 methods allow us to have all operators available as we have in a connected installation, but the third options would be creating our custom catalog containing only the operators we wish.</p>
+<p>The above 2 methods allow us to have all operators available as we have a connected installation, but the third option involves in creating our custom catalog containing only the operators we need.</p>
 </div>
 <div class="paragraph">
-<p>Now catalogs are file-based catalogs instead of sqlite-based catalogs, so most of the command from opm don&#8217;t work. To create a custom catalog follow next steps:</p>
+<p>Now, catalogs are file-based catalogs instead of sqlite-based catalogs, so most of the command from <code>opm</code> binary don&#8217;t work. To create a custom catalog follow next steps:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
 <p>Create catalog index dir</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rm -Rf custom-catalog; mkdir -p custom-catalog/configs</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Extract render index from public image of a public catalog, in our case, the "redhat-operator" catalog index:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">opm render registry.redhat.io/redhat/redhat-operator-index:v4.11 &gt; redhat-operator-index.json</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Take a look to the json file extracted. You can see all info about channels, packages, operators, &#8230;&#8203;</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -711,7 +685,7 @@ Take note our catalogs have prefix <code>mirror-*</code>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>if you have space problems in /tmp you can try to extend /tmp LV</p>
+<p>if you have space problems in <code>/tmp</code> you can try to extend <code>/tmp</code> LV</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
@@ -722,8 +696,7 @@ Take note our catalogs have prefix <code>mirror-*</code>
 </tr>
 </table>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Now we will filter operators from the rendered json extracted from catalog executing an script. These is the list of operators:</p>
 <div class="ulist">
@@ -740,8 +713,8 @@ Take note our catalogs have prefix <code>mirror-*</code>
 </ul>
 </div>
 </li>
-</ul>
-</div>
+<li>
+<p>The following script, extract from json, one by one, the <code>packages</code> and <code>operators</code> related with the list above.</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">operators="elasticsearch-operator cluster-logging cincinnati-operator"
@@ -764,38 +737,50 @@ for operator in $operators; do
 done</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Now, we generate the dockerfile of our catalog image</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">opm generate dockerfile custom-catalog/configs</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Build catalog image</p>
-</li>
-</ul>
+<div class="paragraph">
+<p>This command generate a Dockerfile like this:</p>
 </div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ more custom-catalog/configs.Dockerfile
+# The base image is expected to contain
+# /bin/opm (with a serve subcommand) and /bin/grpc_health_probe
+FROM quay.io/operator-framework/opm:latest
+
+# Configure the entrypoint and command
+ENTRYPOINT ["/bin/opm"]
+CMD ["serve", "/configs", "--cache-dir=/tmp/cache"]
+
+# Copy declarative config root into image at /configs and pre-populate serve cache
+ADD configs /configs
+RUN ["/bin/opm", "serve", "/configs", "--cache-dir=/tmp/cache", "--cache-only"]
+
+# Set DC-specific label for the location of the DC root directory
+# in the image
+LABEL operators.operatorframework.io.index.configs.v1=/configs</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Let&#8217;s build the catalog image</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cd custom-catalog
-podman build -t registry.dsal:8443/mirror/redhat/custom-redhat-operator-index:v1 -f configs.Dockerfile</code></pre>
+podman build -t registry.dsal:8443/mirror/redhat/custom-redhat-operator-index:v1 -f configs.Dockerfile
+cd ~/</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>And now, push the catalog image to our registry</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman push --tls-verify=false \
@@ -803,25 +788,17 @@ podman build -t registry.dsal:8443/mirror/redhat/custom-redhat-operator-index:v1
   registry.dsal:8443/mirror/redhat/custom-redhat-operator-index:v1</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Delete all catalogs (we had our mirror-* catalogs)</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Delete all catalogs we deploy in the previous method (we had our mirror-* catalogs)</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete catalogsources --all -n openshift-marketplace</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Create catalogsource <code>7-custom-catalogsource.yaml</code></p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operators.coreos.com/v1alpha1
@@ -855,17 +832,16 @@ spec:
       interval: 10m0s</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>and apply it</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f  7-custom-catalogsource.yaml</code></pre>
 </div>
+</div>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>Now we can see running our pod, catalog and only our operators selected</p>
@@ -888,6 +864,9 @@ cluster-logging               Custom Red Hat Operators   91s
 cincinnati-operator           Custom Red Hat Operators   91s</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Congratulations!! You are provider of your own operators Catalog :)</p>
+</div>
 </div>
 </div>
 </div>
@@ -895,7 +874,7 @@ cincinnati-operator           Custom Red Hat Operators   91s</code></pre>
 <h2 id="operators"><a class="anchor" href="#operators"></a>Disconnected Operators</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now we have our catalog running in our cluster, and operators "available" to be installed, but we need images neeeded by those operators to be deployed, installed and instanced. Those images are:</p>
+<p>Now, we have our custom catalog running in our cluster, and operators "available" to be installed, but, we need images neeeded by those operators to able to be deployed, installed and instanced. Those images are:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -908,15 +887,28 @@ cincinnati-operator           Custom Red Hat Operators   91s</code></pre>
 </ul>
 </div>
 <div class="paragraph">
-<p>We have 2 methods:</p>
+<p>We have again 2 methods for mirroring this:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>with <code>oc</code></p>
+</li>
+<li>
+<p>with <code>oc-mirror</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s start with <code>oc</code> method:</p>
 </div>
 <div class="sect2">
 <h3 id="mirroringoc"><a class="anchor" href="#mirroringoc"></a>Mirroring with <code>oc</code></h3>
 <div class="paragraph">
-<p>This method, nowadays only works with the default catalog index. With custom index you must use <code>oc-mirror</code>.</p>
+<p>This method, nowadays only works with the default catalog index (not custom ones). With custom index you must use <code>oc-mirror</code>. But we will do a dry-run so you can learn how to do it.</p>
 </div>
 <div class="paragraph">
-<p>We are NOT going to mirror all images of a public catalog (we don&#8217;t have enough space), but we can see the manifest (<code>--manifest-only</code> parameter) to understand the process:</p>
+<p>We are NOT going to mirror all images of a public catalog (we don&#8217;t have enough space in our private registry), but we can see the manifest (<code>--manifest-only</code> parameter) to understand the process:</p>
 </div>
 <div class="paragraph">
 <p>Execute command and explore directory mapping.txt and ImageContentSourcePolicy file:</p>
@@ -925,6 +917,9 @@ cincinnati-operator           Custom Red Hat Operators   91s</code></pre>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm catalog mirror --dry-run --manifests-only registry.redhat.io/redhat/redhat-operator-index:v4.11 registry.dsal:8443/mirror/redhat</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>The output of this command will be something like this:</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
@@ -939,21 +934,19 @@ deleted dir /tmp/3682376003</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The result:</p>
+<p>The resultant files are:</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ls -la manifests-redhat-operator-index-1674039050
-total 1384
-drwxr-xr-x.  2 root root      88 Jan 18 10:51 .
-dr-xr-x---. 10 root root    4096 Jan 18 10:50 ..
--rwxr-xr-x.  1 root root     239 Jan 18 10:51 catalogSource.yaml
--rwxr-xr-x.  1 root root  128126 Jan 18 10:51 imageContentSourcePolicy.yaml
--rw-r--r--.  1 root root 1275736 Jan 18 10:51 mapping.txt</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ tree manifests-redhat-operator-index-1674039050/
+manifests-redhat-operator-index-1674039050/
+├── catalogSource.yaml
+├── imageContentSourcePolicy.yaml
+└── mapping.txt</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The result is:</p>
+<p>These files are:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -964,15 +957,21 @@ dr-xr-x---. 10 root root    4096 Jan 18 10:50 ..
 <p>A <code>ImageContentSourcePolicy</code> to say our cluster where are the images</p>
 </li>
 <li>
-<p>A <code>mapping.txt</code> in format compatible to mirror with the command "oc mirror"</p>
+<p>A <code>mapping.txt</code> in format compatible to mirror with the command "oc mirror". We could use it afterwards to do the mirroring.</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>The method is with <code>oc-mirror</code>:</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="mirroringocmirror"><a class="anchor" href="#mirroringocmirror"></a>Mirroring with <code>oc-mirror</code></h3>
 <div class="paragraph">
-<p>We have 2 options:</p>
+<p>This method we use <code>oc-mirror</code> binary, tool which we have used several times in this workshop. <code>oc-mirror</code> helped us to do mirror of set of openshift release images, mirror of images, and also we can use it for catalogs.</p>
+</div>
+<div class="paragraph">
+<p><code>oc-mirror</code> offers 2 options:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -984,15 +983,18 @@ dr-xr-x---. 10 root root    4096 Jan 18 10:50 ..
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>First option:</p>
+</div>
 <div class="sect3">
 <h4 id="imagesetcustomcatalog"><a class="anchor" href="#imagesetcustomcatalog"></a><strong>ImageSet for custom catalog index</strong></h4>
+<div class="paragraph">
+<p>This option, <code>oc-mirror</code> takes our custom catalog and also the source/origin catalog (it&#8217;s a requirement), makes the mirror of the operators included in our custom catalog and then give to us all we need to run operators in our cluster. Let&#8217;s see:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
 <p>Create imageset config file <code>7-imageset-mirroring-custom-catalog.yaml</code>:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: ImageSetConfiguration
@@ -1000,23 +1002,9 @@ apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 10
 storageConfig:
   registry:
-    imageURL: registry.dsal:8443/imagetset/mirror:metadata
+    imageURL: registry.dsal:8443/imagetset/mirror-custom-catalog:metadata
     skipTLS: true
 mirror:
-  platform:
-    channels:
-    - name: stable-4.10
-      type: ocp
-      minVersion: 4.9.10
-      maxVersion: 4.9.22
-      shortestPath: true
-    - name: stable-4.11
-      type: ocp
-      minVersion: 4.11.20
-      maxVersion: 4.11.20
-      shortestPath: true
-    architectures:
-    - amd64
   operators:
   - catalog: registry.dsal:8443/mirror/redhat/custom-redhat-operator-index:v1
     originalRef: registry.redhat.io/redhat/redhat-operator-index:v4.11</code></pre>
@@ -1029,28 +1017,37 @@ mirror:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-we need to specify in the config the source of our custom catalog with the parameter <code>originalRef</code>
+take note we need to specify in the config the source of our custom catalog with the parameter <code>originalRef</code>
 </td>
 </tr>
 </table>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Run mirror</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc-mirror --continue-on-error --config=./7-imageset-mirroring-custom-catalog.yaml  docker://registry.dsal:8443/mirror</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>It takes some time, be patient.</p>
+<p>It takes some time, be patient. These will be the output:</p>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">...
+sha256:e72c3703a5be273bd6135626abe6d1a78a3c642eea9c98e508d71cd252d2536a registry.dsal:8443/mirror/openshift-logging/elasticsearch-operator-bundle:33b087fb
+sha256:f6af35418dc282c51902b462c03a6fe62d38d0ec83b9fd7c95cee754377b24af registry.dsal:8443/mirror/openshift-logging/elasticsearch-operator-bundle:a9ad14a9
+sha256:88223a315adef617e57a038cf825ac2b52a255d64e63b7461ab15e1f7683baf5 registry.dsal:8443/mirror/openshift-logging/elasticsearch-operator-bundle:b0cde4fb
+info: Mirroring completed in 4m16.05s (41.98MB/s)
+Rendering catalog image "registry.dsal:8443/mirror/mirror/redhat/custom-redhat-operator-index:v1" with file-based catalog
+Writing image mapping to oc-mirror-workspace/results-1679995563/mapping.txt
+Writing CatalogSource manifests to oc-mirror-workspace/results-1679995563
+Writing ICSP manifests to oc-mirror-workspace/results-1679995563</code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p>The result is:</p>
+<p>The result of this operation will be:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1068,22 +1065,22 @@ we need to specify in the config the source of our custom catalog with the param
 </li>
 </ul>
 </div>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>We are not going to configure the mirroring in the cluster yet. We will do it later, in the next section.</p>
+<p>We are not going to configure or apply these configuration/mirroring in the cluster. We will do it later, in the next section, with the other option based on the official catalog filtered:</p>
 </div>
 </div>
 <div class="sect3">
 <h4 id="imagesetfiltered"><a class="anchor" href="#imagesetfiltered"></a><strong>ImageSet for official catalog filtered</strong></h4>
 <div class="paragraph">
-<p>The second method is using the feature of <code>oc-mirror</code> to filter operators of a default/official index, and mirror images of them.</p>
+<p>The second method/option is using the feature of <code>oc-mirror</code> to filter operators of a default/official index, and mirror images of them.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
 <p>Create imageset config file <code>7-imageset-mirroring-default-catalog.yaml</code>:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: ImageSetConfiguration
@@ -1091,23 +1088,9 @@ apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 10
 storageConfig:
   registry:
-    imageURL: registry.dsal:8443/imagetset/mirror:metadata
+    imageURL: registry.dsal:8443/imagetset/mirror-default-catalog:metadata
     skipTLS: true
 mirror:
-  platform:
-    channels:
-    - name: stable-4.10
-      type: ocp
-      minVersion: 4.9.10
-      maxVersion: 4.9.22
-      shortestPath: true
-    - name: stable-4.11
-      type: ocp
-      minVersion: 4.11.20
-      maxVersion: 4.11.20
-      shortestPath: true
-    architectures:
-    - amd64
   operators:
    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.11
      packages:
@@ -1116,43 +1099,29 @@ mirror:
        - name: cincinnati-operator</code></pre>
 </div>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-If you did already the upgrade of the first cluster you can delete the section of mirroring releases 4.9.10 and 4.9.22
-</td>
-</tr>
-</table>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Run oc-mirror:</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Now, delete all catalogs deployed and run oc-mirror command:</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc-mirror --continue-on-error --config=./7-imageset-mirroring-default-catalog.yaml docker://registry.dsal:8443/mirror</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete catalogsource --all -n openshift-marketplace
+
+oc-mirror --continue-on-error --config=./7-imageset-mirroring-default-catalog.yaml docker://registry.dsal:8443/mirror</code></pre>
 </div>
 </div>
 <div class="listingblock console-output">
 <div class="content">
-<pre>.........
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">.........
 .........
 info: Mirroring completed in 2.26s (0B/s)
 Rendering catalog image "registry.dsal:8443/mirror/redhat/redhat-operator-index:v4.11" with file-based catalog
 Writing image mapping to oc-mirror-workspace/results-1674048845/mapping.txt
 Writing CatalogSource manifests to oc-mirror-workspace/results-1674048845
-Writing ICSP manifests to oc-mirror-workspace/results-1674048845</pre>
+Writing ICSP manifests to oc-mirror-workspace/results-1674048845</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The result would be:</p>
+<p>The result will be:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1160,53 +1129,29 @@ Writing ICSP manifests to oc-mirror-workspace/results-1674048845</pre>
 <p>Operators images mirrored</p>
 </li>
 <li>
-<p>An ImageContentSourcePolicy file to import into the cluster (<code>oc-mirror-workspace/results-xxxx/imageContentSourcePolicy.yaml</code>)</p>
+<p>An <code>ImageContentSourcePolicy</code> file to import into the cluster (<code>oc-mirror-workspace/results-xxxx/imageContentSourcePolicy.yaml</code>)</p>
 </li>
 <li>
-<p>A Catalogsource (<code>oc-mirror-workspace/results-xxxx/catalogSource-redhat-custom-redhat-operator-index.yaml</code>)</p>
+<p>A <code>CatalogSource</code> file to create the catalog in the cluster(<code>oc-mirror-workspace/results-xxxx/catalogSource-redhat-custom-redhat-operator-index.yaml</code>)</p>
 </li>
 <li>
 <p>A <code>mapping.txt</code> with the list of images mirrored (<code>oc-mirror-workspace/results-xxxx/mapping.txt</code>)</p>
 </li>
 </ul>
 </div>
-<div class="paragraph">
-<p>Now we are going to remove all catalogs configured in the cluster, import this new created by <code>oc-mirror</code> and import the ImageContentSourcePolicy object.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Delete current configured catalog source:</p>
 </li>
-</ul>
-</div>
-<div class="listingblock console-input">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete catalogsource --all -n openshift-marketplace</code></pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
 <li>
-<p>Import all object in the folder specified in the output of the <code>oc-mirror</code> execution</p>
-</li>
-</ul>
-</div>
-<div class="listingblock console-input">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f oc-mirror-workspace/results-1674048845</code></pre>
-</div>
-</div>
+<p>Now, we are going to import the new catalog created by <code>oc-mirror</code> and import the <code>ImageContentSourcePolicy</code> object. Import all object in the folder specified in the output of the <code>oc-mirror</code> execution (use your result dir):</p>
 <div class="listingblock console-output">
 <div class="content">
-<pre>catalogsource.operators.coreos.com/redhat-operator-index created
-imagecontentsourcepolicy.operator.openshift.io/operator-0 created
-imagecontentsourcepolicy.operator.openshift.io/release-0 created</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ oc apply -f oc-mirror-workspace/results-xxxx
+catalogsource.operators.coreos.com/redhat-operator-index created
+imagecontentsourcepolicy.operator.openshift.io/operator-0 created</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>The result of all:</p>
-</div>
+</li>
+<li>
+<p>The result of all these operations:</p>
 <div class="listingblock console-output">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ oc get pod,catalogsources,packagemanifest,imagecontentsourcepolicy -n openshift-marketplace
@@ -1225,8 +1170,7 @@ packagemanifest.packages.operators.coreos.com/cluster-logging                   
 NAME                                                            AGE
 imagecontentsourcepolicy.operator.openshift.io/image-policy-0   21h
 imagecontentsourcepolicy.operator.openshift.io/image-policy-1   21h
-imagecontentsourcepolicy.operator.openshift.io/operator-0       2m25s
-imagecontentsourcepolicy.operator.openshift.io/release-0        2m25s</code></pre>
+imagecontentsourcepolicy.operator.openshift.io/operator-0       2m25s</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -1241,16 +1185,16 @@ For more detail and stay curious take a look to the files generated by <code>oc-
 </tr>
 </table>
 </div>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>To test all, we will install Openshift Logging Operator and ElasticSearch Operator.</p>
+<p>To test the the catalogs, mirrors and operators, we will install Openshift Logging Operator and ElasticSearch Operator.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Create a yaml file <code>7-operator-openshift-logging.yaml</code></p>
-</li>
-</ul>
-</div>
+<p>Create a yaml file <code>7-operator-openshift-logging.yaml</code> with the namespaces, the operator groups and subscriptions:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">---
@@ -1285,7 +1229,7 @@ metadata:
   name: "elasticsearch-operator"
   namespace: "openshift-operators-redhat"
 spec:
-  channel: "stable-5.1"
+  channel: "stable"
   installPlanApproval: "Automatic"
   source: "redhat-operator-index"
   sourceNamespace: "openshift-marketplace"
@@ -1312,20 +1256,16 @@ spec:
   sourceNamespace: openshift-marketplace</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>and apply it</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 7-operator-openshift-logging.yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>After some time, operator will be installed</p>
+<p>After some time, the operators will be installed</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
@@ -1343,8 +1283,11 @@ NAME                                      READY   STATUS    RESTARTS   AGE
 cluster-logging-operator-ddd4f964-xrdzt   1/1     Running   0          5m22s</code></pre>
 </div>
 </div>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>We are not going to install a instance of openshift-logging for capacity reasons :)</p>
+<p>We are not going to install an instance of openshift-logging for capacity reasons. We only have a small single node :)</p>
 </div>
 </div>
 </div>

@@ -249,8 +249,12 @@
 <article class="doc">
 <h1 class="page">Disconnected deployment</h1>
 <div class="paragraph">
-<p>We will mirror 4.11.20 Openshift release images in registry-mirror (8443), so create imageset config file <code>6-imageset-config.yaml</code></p>
+<p>Now, we are going to deploy an Openshift directly disconnected. For that, we need to mirror a new release (4.11.20) and then deploy it with <code>kcli</code>.</p>
 </div>
+<div class="ulist">
+<ul>
+<li>
+<p>We will mirror 4.11.20 Openshift release images in registry-mirror (8443), so create imageset config file <code>6-imageset-config.yaml</code></p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: ImageSetConfiguration
@@ -258,44 +262,31 @@ apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 1
 storageConfig:
   registry:
-    imageURL: registry.dsal:8443/imagetset/mirror:metadata
+    imageURL: registry.dsal:8443/imagetset/mirror-disconnected:metadata
     skipTLS: true
 mirror:
   platform:
     channels:
-    - name: stable-4.10
-      type: ocp
-      minVersion: 4.9.10
-      maxVersion: 4.9.22
-      shortestPath: true
     - name: stable-4.11
       type: ocp
       minVersion: 4.11.20
       maxVersion: 4.11.20
-      shortestPath: true
+      shortestPath: false
     architectures:
     - amd64</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Run mirror</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Run <code>oc-mirror</code> with the config:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc-mirror --config=./6-imageset-config.yaml  docker://registry.dsal:8443/mirror</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Copy release image to releases repository (kcli requirements reason):</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc image mirror -a ~/pull-secret-all.json \
@@ -306,13 +297,9 @@ oc image mirror -a ~/pull-secret-all.json \
   registry.dsal:8443/mirror/openshift/release:4.11.20</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Mirror kcli images</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/curl:latest registry.dsal:8443/karmab/curl:latest
@@ -324,23 +311,19 @@ oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kubectl:latest registr
 oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kcli:latest registry.dsal:8443/karmab/kcli:latest</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Deploy cluster with kcli</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli create kube openshift \
 -P ctlplanes=1 -P workers=0 \
--P ctlplanes_memory=16384 \
+-P ctlplane_memory=18432 \
 -P disk_size=120 \
 -P tag=4.11.20 \
 -P pull_secret=~/pull-secret-all.json  \
 -P cluster=lab-test-disconnected \
--P domain=labdis.dsal \
+-P domain=lab.dsal \
 -P disconnected_url=registry.dsal:8443 \
 -P disconnected_prefix=mirror/openshift/release \
 -P disconnected_user=registry \
@@ -350,19 +333,15 @@ oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kcli:latest registry.d
  kcli-ocp-dis-dsal</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Take a look to the install-config.yaml created by kcli</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-output">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">$ cat ~/.kcli/clusters/lab-test-disconnected/install-config.yaml.bck
 
 apiVersion: v1
-baseDomain: labdis.dsal
+baseDomain: lab.dsal
 compute:
 - name: worker
   replicas: 0
@@ -397,29 +376,24 @@ imageContentSources:
   source: quay.io/ocp-release</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Check cluster it&#8217;s working. Export <code>KUBECONFIG</code> variable:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KUBECONFIG=/root/.kcli/clusters/lab-test-disconnected/auth/kubeconfig</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>And then, to check all is correct</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get clusterversion,nodes,co</code></pre>
 </div>
+</div>
+</li>
+</ul>
 </div>
 <nav class="pagination">
   <span class="prev"><a href="05-Disconnected-Upgrades.html">Disconnected Upgrades</a></span>

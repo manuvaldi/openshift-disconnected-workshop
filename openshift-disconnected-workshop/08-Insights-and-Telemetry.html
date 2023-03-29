@@ -251,7 +251,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>There services on a Openshift Cluster need Internet, but we can workaround to upload this info in a controlled way. So, there are these options:</p>
+<p>On an OpenShift Cluster, there are certain services, such as Insight or Telemetry, which require Internet connectivity to function properly. These services continuously send information to the Red Hat Cloud Portal. However, as our cluster is currently disconnected from the Internet, we need to find a workaround to upload this information in a controlled manner. Therefore, we have several options to resolve this disconnected situation:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -259,12 +259,15 @@
 <p>Disable both services</p>
 </li>
 <li>
-<p>Manual upload (job via proxy)</p>
+<p>Manual upload (jobs sending info via proxy)</p>
 </li>
 <li>
-<p>Usin a cluster-wide proxy</p>
+<p>Using a cluster-wide proxy server</p>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s see how to do it in both services. We will start with Insight Service.</p>
 </div>
 </div>
 </div>
@@ -277,153 +280,169 @@
 <ul>
 <li>
 <p>Download the global cluster pull secret to your local file system:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc extract secret/pull-secret -n openshift-config --to=.</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Edit file <code>.dockerconfigjson</code> (make a copy before), and remove the <code>cloud.openshift.com</code> JSON entry.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Take in account that in our disconnected cluster we have the global secret configured only with the credentials of the private registry. So, in this case, we don&#8217;t have to modify anything. :)
+</td>
+</tr>
+</table>
+</div>
 </li>
 <li>
 <p>Update global secret:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=.dockerconfigjson</code></pre>
 </div>
 </div>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="insightsmanualupload"><a class="anchor" href="#insightsmanualupload"></a>Manual upload (job via proxy)</h3>
+<div class="paragraph">
+<p>For this option, we will generate the info/data and then upload it to the Red Hat Cloud services. However, in order to do so, we require a proxy server or another machine with Internet access. In our specific case, we will create and utilize a proxy. To accomplish this, we will run a container within the Registry VM that will host the proxy server.</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p>Run a proxy in registry VM</p>
-</li>
-</ul>
-</div>
+<p>Run a proxy in the registry VM ( access to the registry VM using <code>kcli ssh registry`</code> and become root <code>sudo su</code> before)</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman run -d --name squid-container -e TZ=UTC -p 3128:3128 ubuntu/squid</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman run -d --name squid-container -e TZ=UTC -p 3128:3128 docker.io/ubuntu/squid:latest</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
-<p>Extract token from pull secret for cloud.redhat.com</p>
+<p>Exit from Registry VM and stay in the Hypervisor.</p>
+</li>
+<li>
+<p>Extract token from pull secret for <code>cloud.redhat.com</code>.</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat ~/pull-secret-all.json | jq '.auths["cloud.openshift.com"].auth'</code></pre>
+</div>
+</div>
 </li>
 <li>
 <p>Extract clusterid from cluster:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get clusterversion -o jsonpath='{.items[].spec.clusterID}{"\n"}'</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Create job and update environment variables TOKEN, CLUSTERID and HTTPS_PROXY properly (<code>8-insights-job.yaml</code>)</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Create job and update environment variables TOKEN, CLUSTERID and HTTPS_PROXY properly with the above values (<code>8-insights-cronjob.yaml</code>)</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: batch/v1
-kind: Job
+kind: CronJob
 metadata:
-  name: insights-operator-job
+  name: insights-operator-cronjob
   namespace: openshift-insights
   annotations:
     config.openshift.io/inject-proxy: insights-operator
 spec:
-  backoffLimit: 6
-  ttlSecondsAfterFinished: 600
-  template:
+  schedule: "*/30 * * * *"          
+  timeZone: Etc/UTC                
+  concurrencyPolicy: "Replace"     
+  startingDeadlineSeconds: 200     
+  suspend: false                    
+  successfulJobsHistoryLimit: 3    
+  failedJobsHistoryLimit: 1        
+  jobTemplate:                     
     spec:
-      restartPolicy: OnFailure
-      serviceAccountName: operator
-      nodeSelector:
-        kubernetes.io/os: linux
-        node-role.kubernetes.io/master: ""
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
-      - effect: NoExecute
-        key: node.kubernetes.io/unreachable
-        operator: Exists
-        tolerationSeconds: 900
-      - effect: NoExecute
-        key: node.kubernetes.io/not-ready
-        operator: Exists
-        tolerationSeconds: 900
-      volumes:
-      - name: snapshots
-        emptyDir: {}
-      - name: service-ca-bundle
-        configMap:
-          name: service-ca-bundle
-          optional: true
-      initContainers:
-      - name: insights-operator
-        image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:78e5a3b2244793c6d11b05332244ab5598b0b8c0332dd39b41a42913afc517e0
-        terminationMessagePolicy: FallbackToLogsOnError
-        volumeMounts:
-        - name: snapshots
-          mountPath: /var/lib/insights-operator
-        - name: service-ca-bundle
-          mountPath: /var/run/configmaps/service-ca-bundle
-          readOnly: true
-        ports:
-        - containerPort: 8443
-          name: https
-        resources:
-          requests:
-            cpu: 10m
-            memory: 70Mi
-        args:
-        - gather
-        - -v=4
-        - --config=/etc/insights-operator/server.yaml
-      containers:
-        - name: uploader
-          image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:0671b1b4e197c7a2673f9fbee100e5c1d76a49318fe436cabf2809279f4f5ce4
-          env:
-          - name: TOKEN
-            value: "fasdfasdfasdfasdfas"
-          - name: CLUSTERID
-            value: "xxxx-xxxx-xxxx-xxxx
-          - name: HTTPS_PROXY
-            value: "registry.dsal:3128"
-          command:
-           - /bin/sh
-          args:
-            - -c
-            - 'sleep 1m &amp;&amp; ls -d /var/lib/insights-operator/*gz &amp;&amp; curl -v -H "User-Agent: insights-operator/one10time200gather184a34f6a168926d93c330 cluster/$(CLUSTERID)" -H "Authorization: Bearer $(TOKEN)" -F "upload=@$(ls -d /var/lib/insights-operator/*gz | head -n 1); type=application/vnd.redhat.openshift.periodic+tar" <a href="https://console.redhat.com/api/ingress/v1/upload'" class="bare">https://console.redhat.com/api/ingress/v1/upload'</a>
-          volumeMounts: [{name: snapshots, mountPath: /var/lib/insights-operator}]</code></pre>
+      template:
+        metadata:
+          name: insights-operator-cronjob
+          namespace: openshift-insights
+          annotations:
+            config.openshift.io/inject-proxy: insights-operator  
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: operator
+          nodeSelector:
+            kubernetes.io/os: linux
+            node-role.kubernetes.io/master: ""
+          tolerations:
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/master
+            operator: Exists
+          - effect: NoExecute
+            key: node.kubernetes.io/unreachable
+            operator: Exists
+            tolerationSeconds: 900
+          - effect: NoExecute
+            key: node.kubernetes.io/not-ready
+            operator: Exists
+            tolerationSeconds: 900
+          volumes:
+          - name: snapshots
+            emptyDir: {}
+          - name: service-ca-bundle
+            configMap:
+              name: service-ca-bundle
+              optional: true
+          initContainers:
+          - name: gather-data
+            image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:78e5a3b2244793c6d11b05332244ab5598b0b8c0332dd39b41a42913afc517e0
+            terminationMessagePolicy: FallbackToLogsOnError
+            volumeMounts:
+            - name: snapshots
+              mountPath: /var/lib/insights-operator
+            - name: service-ca-bundle
+              mountPath: /var/run/configmaps/service-ca-bundle
+              readOnly: true
+            ports:
+            - containerPort: 8443
+              name: https
+            resources:
+              requests:
+                cpu: 10m
+                memory: 70Mi
+            args:
+            - gather
+            - -v=4
+            - --config=/etc/insights-operator/server.yaml
+          containers:
+            - name: uploader
+              image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:0671b1b4e197c7a2673f9fbee100e5c1d76a49318fe436cabf2809279f4f5ce4
+              env:
+              - name: TOKEN
+                value: "fasdfasdfasdfasdfas"
+              - name: CLUSTERID
+                value: "xxxx-xxxx-xxxx-xxxx"
+              - name: HTTPS_PROXY
+                value: "registry.dsal:3128"
+              command:
+              - /bin/sh
+              args:
+                - -c
+                - 'sleep 30s &amp;&amp; ls -d /var/lib/insights-operator/*gz &amp;&amp; curl -v -H "User-Agent: insights-operator/one10time200gather184a34f6a168926d93c330 cluster/$(CLUSTERID)" -H "Authorization: Bearer $(TOKEN)" -F "upload=@$(ls -d /var/lib/insights-operator/*gz | head -n 1); type=application/vnd.redhat.openshift.periodic+tar" <a href="https://console.redhat.com/api/ingress/v1/upload'" class="bare">https://console.redhat.com/api/ingress/v1/upload'</a>
+              volumeMounts: [{name: snapshots, mountPath: /var/lib/insights-operator}]</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>and run job:</p>
 </li>
-</ul>
-</div>
+<li>
+<p>and "install" the cronjob:</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 8-insights-job.yaml</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 8-insights-cronjob.yaml</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -434,28 +453,41 @@ spec:
 </td>
 <td class="content">
 <div class="paragraph">
-<p>You can run again the job deleting it and applying again</p>
+<p>This is a cronjob running every 30 minutes. You can change the schedule expression to run again the job. Alternatively, you can create a job based on this cronjob executing:</p>
 </div>
-<div class="paragraph">
-<p>If you wants to do it recurrently, you could create a K8s cronjob</p>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create job -n openshift-insights --from=cronjob.batch/insights-operator-cronjob test</code></pre>
+</div>
 </div>
 </td>
 </tr>
 </table>
 </div>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="telemetry"><a class="anchor" href="#telemetry"></a>Telemetry client</h2>
+<h2 id="telemetry"><a class="anchor" href="#telemetry"></a>Telemetry</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The telemetry service/client is a component of Openshift Monitoring. For this service there are 3 options:</p>
+<p>The telemetry service/client is a component of Openshift Monitoring. For this service there are also the same 3 options:</p>
 </div>
-<div class="paragraph">
-<p>1) Disable: Same way as Insight, removing credentiasl from global pull-secret
-2) Manual upload (job via proxy)
-3) Using a cluster-wide proxy</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Disable: Same way as Insight, removing credentials from global pull-secret. (We won&#8217;t cover this method)</p>
+</li>
+<li>
+<p>Manual upload (job via proxy)</p>
+</li>
+<li>
+<p>Using a cluster-wide proxy</p>
+</li>
+</ul>
 </div>
 <div class="sect2">
 <h3 id="telemetrymanualupload"><a class="anchor" href="#telemetrymanualupload"></a>Manual Upload</h3>
@@ -469,21 +501,37 @@ spec:
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-This service is only installed if in the global pull-secret are the credentials for <code>cloud.redhat.com</code>. So, if in your cluster is not configured, added it again.
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p>This service is only installed if in the global pull-secret are the credentials for <code>cloud.redhat.com</code>. So, if in your cluster is not configured, added it again.</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=./pull-secret-all.json</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Once added, wait or force deletion of the operator pod to reconcile, and it can (re)create the telemeter-client pod.</p>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>The only thing we will do it&#8217;s adding the <code>HTTPS_PROXY</code> variable in the deployment. Just execute:</p>
+<p>Once added, wait some minutes, or force deletion of the operator pod to reconcile, and it can (re)create the telemeter-client pod.</p>
+</div>
+<div class="listingblock console-input">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pod -l app=cluster-monitoring-operator -n openshift-monitoring</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until telemeter pod is created:</p>
+</div>
+<div class="listingblock console-output">
+<div class="content">
+<pre>$ oc get pod -n openshift-monitoring | grep telemeter-client
+telemeter-client-85d9d5fcbc-49chl                        3/3     Running   0          16s</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To enable the telemeter pod to use the proxy server for sending data, we simply need to add the HTTPS_PROXY variable to the deployment. This can be accomplished by executing the following command:</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
@@ -491,10 +539,10 @@ This service is only installed if in the global pull-secret are the credentials 
 </div>
 </div>
 <div class="paragraph">
-<p>When Monitoring Operator reconciles the changes will be lost, so we can execute this command in a cronjob or externally.</p>
+<p>When Monitoring Operator reconciles the changes will be lost, so we can execute this command in a k8s cronjob or externally on demand.</p>
 </div>
 <div class="paragraph">
-<p>To check the status and telemetry, browse in <code><a href="https://console.redhat.com/openshift" class="bare">https://console.redhat.com/openshift</a></code></p>
+<p>To check the status of insight and telemetry, browse in <code><a href="https://console.redhat.com/openshift" class="bare">https://console.redhat.com/openshift</a></code></p>
 </div>
 </div>
 </div>

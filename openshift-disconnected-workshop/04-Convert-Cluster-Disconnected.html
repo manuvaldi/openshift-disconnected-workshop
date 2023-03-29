@@ -251,7 +251,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>We have 4 registries:</p>
+<p>We have 2 registries with images mirrored:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -261,22 +261,10 @@
 <li>
 <p>A registry mirror-registry method with 4.9.10 and 4.9.22 in registry.dsal:8443</p>
 </li>
-<li>
-<p>A registry cache with a minimal/basic Quay deployment in registry.dsal (443)</p>
-</li>
-<li>
-<p>A registry cache with a registry-cache in registry.dsal:6443</p>
-</li>
 </ul>
 </div>
 <div class="paragraph">
-<p>We are going to upgrade the cluster in this order:</p>
-</div>
-<div class="paragraph">
-<p>4.9.10 &#8594; 4.9.22 &#8594; 4.10.20 &#8594; 4.11.20</p>
-</div>
-<div class="paragraph">
-<p>We will use the different registries to get available the images for the cluster. But first of all we will "disconnect" our cluster.</p>
+<p>So let&#8217;s go to "disconnect" our cluster.</p>
 </div>
 </div>
 </div>
@@ -290,42 +278,36 @@
 <ul>
 <li>
 <p>Copy registry ca cert into your machine as <code>ca.crt</code></p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">kcli scp registry:/data/registry/certs/registry.crt .
 mv registry.crt ca.crt</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Create configmap with the ca certificates for every registry (the same in our case)</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Create a configmap with the CA certificates for every registry (the same in our case)</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create configmap registry-cas -n openshift-config \
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KUBECONFIG=/root/.kcli/clusters/lab-test/auth/kubeconfig
+
+oc create configmap registry-cas -n openshift-config \
 --from-file=registry.dsal..5000=ca.crt \
 --from-file=registry.dsal..8443=ca.crt \
 --from-file=registry.dsal=ca.crt \
 --from-file=registry.dsal..6443=ca.crt</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Enable additional trusted ca:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch image.config.openshift.io/cluster --patch '{"spec":{"additionalTrustedCA":{"name":"registry-cas"}}}' --type=merge</code></pre>
 </div>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -333,15 +315,15 @@ mv registry.crt ca.crt</code></pre>
 <h2 id="configuremirrors"><a class="anchor" href="#configuremirrors"></a>Configure mirrors in the cluster</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A kcli openshift deployment runs some custom pods. <code>ImageContentSourcePolicy</code> object only allows digest references for images. Kcli pods use tags instead of digest. To be able to have an usable cluster we need to create a machine-config file to specify mirror configure for no only digest. So, following these steps (<a href="https://access.redhat.com/solutions/4817401" class="bare">https://access.redhat.com/solutions/4817401</a>):</p>
+<p>A <code>kcli</code> Openshift deployment runs some custom pods of kcli software. So if we are going to disconnect the cluster, we need also those images mirrored and available.</p>
+</div>
+<div class="paragraph">
+<p><code>ImageContentSourcePolicy</code> object only allows digest references for images. Kcli deployments use tags instead of digest. To be able to have an usable cluster we need to create a machine-config file to specify mirror configuration for not-only digest. So, following these steps (<a href="https://access.redhat.com/solutions/4817401" class="bare">https://access.redhat.com/solutions/4817401</a>) to deploy mirroring config to cri-o (container engine) in the nodes we will get kcli images available.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Create a registry.conf file (remember we mirror those images in the mirroring section ):</p>
-</li>
-</ul>
-</div>
+<p>Create a <code>registry.conf</code> file (remember we mirror those images in the mirroring section ):</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-txt hljs" data-lang="txt">[[registry]]
@@ -356,13 +338,21 @@ location = "registry.dsal:5000/karmab"
 location = "registry.dsal:8443/karmab"</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>get base64 from this file:</p>
-</li>
-</ul>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Take note we will mirror kcli images to both registries
+</td>
+</tr>
+</table>
 </div>
+</li>
+<li>
+<p>Get base64 from this file:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat registry.conf.file | base64 -w0</code></pre>
@@ -373,13 +363,9 @@ location = "registry.dsal:8443/karmab"</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">W1tyZWdpc3RyeV1dCiAgcHJlZml4ID0gIiIKICBsb2NhdGlvbiA9ICJxdWF5LmlvL2thcm1hYiIKICBtaXJyb3ItYnktZGlnZXN0LW9ubHkgPSBmYWxzZQoKW1tyZWdpc3RyeS5taXJyb3JdXQpsb2NhdGlvbiA9ICJyZWdpc3RyeS5kc2FsOjUwMDAva2FybWFiIgoKW1tyZWdpc3RyeS5taXJyb3JdXQpsb2NhdGlvbiA9ICJyZWdpc3RyeS5kc2FsOjg0NDMva2FybWFiIgo=</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>create machine-config file (<code>4-mc-99-karmab-registries.yaml</code>):</p>
 </li>
-</ul>
-</div>
+<li>
+<p>Create machine-config file (<code>4-mc-99-karmab-registries.yaml</code>):</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: machineconfiguration.openshift.io/v1
@@ -401,13 +387,9 @@ spec:
         path: /etc/containers/registries.conf.d/99-karmab-registries.conf</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>and apply</p>
 </li>
-</ul>
-</div>
+<li>
+<p>And apply</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 4-mc-99-karmab-registries.yaml</code></pre>
@@ -420,18 +402,14 @@ spec:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-This operation takes some time because our SNO cluster needs to restart the node. Wait for the cluster to be available to continue.
+This operation will take some time because our SNO cluster needs to restart the node. Please wait until the cluster is available again before continuing.
 </td>
 </tr>
 </table>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Now we will create the imagecontentsourcepolicy object (<code>4-icsp-registry-v2-5000.yaml</code>)</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operator.openshift.io/v1alpha1
@@ -448,20 +426,19 @@ spec:
     source: quay.io/openshift-release-dev/ocp-v4.0-art-dev</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>and apply:</p>
 </li>
-</ul>
-</div>
+<li>
+<p>And apply it:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f 4-icsp-registry-v2-5000.yaml</code></pre>
 </div>
 </div>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>Now, you can check config directly in the node:</p>
+<p>Now, you can check the config directly in the node executing this command:</p>
 </div>
 <div class="listingblock console-output">
 <div class="content">
@@ -512,14 +489,10 @@ registries:
 <h2 id="updatepullsecret"><a class="anchor" href="#updatepullsecret"></a>Update global pull secret</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Our OCP will need the credentials/pull-secret to be able to access to the images from registries. (Following <a href="https://docs.openshift.com/container-platform/4.11/updating/updating-restricted-network-cluster.html#images-update-global-pull-secret_updating-restricted-network-cluster" class="bare">https://docs.openshift.com/container-platform/4.11/updating/updating-restricted-network-cluster.html#images-update-global-pull-secret_updating-restricted-network-cluster</a>)</p>
+<p>Our OCP will need the credentials/pull-secret to be able to access to the images from the private registries. (Following <a href="https://docs.openshift.com/container-platform/4.11/updating/updating-restricted-network-cluster.html#images-update-global-pull-secret_updating-restricted-network-cluster" class="bare">https://docs.openshift.com/container-platform/4.11/updating/updating-restricted-network-cluster.html#images-update-global-pull-secret_updating-restricted-network-cluster</a>)</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Change pull secret with our <code>pull-secret-all.yaml</code></p>
-</li>
-</ul>
+<div class="paragraph">
+<p>If you remember we modified the file <code>pull-secret-all.yaml</code> from our home directory, and we added auths/credentials for the different private registries. Now, we will replace the Openshift global pull secret with these version:</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
@@ -538,9 +511,6 @@ registries:
 <ul>
 <li>
 <p>Drop traffic from libvirtd network:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">iptables -I FORWARD -s 192.168.122.0/24  -j DROP</code></pre>
@@ -554,7 +524,7 @@ registries:
 </td>
 <td class="content">
 <div class="paragraph">
-<p>To recover internet:</p>
+<p>To recover internet, use:</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
@@ -565,17 +535,28 @@ registries:
 </tr>
 </table>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Because we have 2 registries in cache mode, we will allow the registry VM access to Internet, so open the traffic for it:</p>
-</li>
-</ul>
-</div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">iptables -I FORWARD -s 192.168.122.22/32  -j ACCEPT</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">iptables -I FORWARD -s 192.168.122.XX/32  -j ACCEPT</code></pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Change XX for the IP of the registry VM
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
