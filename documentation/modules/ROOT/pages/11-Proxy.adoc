@@ -26,4 +26,4 @@ spec:
     name: user-ca-bundle
 ----
 
-Remember that if you have a cluster with proxy, the images can be downloaded with it, so we don't need the ImageContentSourcePolicy neither disable Default catalogs.
+Remember that if you have a cluster with proxy, the images can be downloaded with it, so we don't need the `ImageContentSourcePolicy` neither disable Default catalogs.

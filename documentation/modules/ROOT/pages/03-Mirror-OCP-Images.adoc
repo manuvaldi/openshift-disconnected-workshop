@@ -1,11 +1,12 @@
+ifndef::imagesdir[:imagesdir: ../assets/images/]
+
 = Mirror Openshift Images
 include::_attributes.adoc[]
 
-We will mirror OCP images to
+We will mirror OCP images to:
+
 - From OCP release **4.9.10** to the registry v2 in `registry.dsal:5000`
 - From OCP release **4.9.10** and **4.9.22** to the registry mirror-registry in `registry.dsal:8443`
-
-
 
 There 2 official methods to mirror images to a registry:
 
@@ -18,7 +19,7 @@ There 2 official methods to mirror images to a registry:
 From the Hypervisor machine with root user.
 
 - Import certificate from registry VM to Hypervisor for avoid certificated x509 problems
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -28,8 +29,8 @@ update-ca-trust
 rm -Rf registry.crt
 ----
 
-- Run this commands:
-
+- Now we will mirror images for Openshift 4.9.10 with `oc` command:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -42,29 +43,26 @@ RELEASE_NAME="ocp-release"
 ARCHITECTURE=x86_64
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}
 ----
++
+NOTE: It takes some time, you can continue with the next steps in another terminal
 
-
-- A OCP kcli-deployment run some custom pods. To be able to run in a disconnected environment we need to mirror de kcli images:
-
+- A OCP kcli-deployment run some custom pods. To be able to run in a disconnected environment we need to mirror de kcli images (you can do it in another terminal ):
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/curl:latest registry.dsal:5000/karmab/curl:latest
-oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-coredns:latest registry.dsal:5000/karmab/origin-coredns:latest
-oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/haproxy:latest registry.dsal:5000/karmab/haproxy:latest
-oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/origin-keepalived-ipfailover:latest registry.dsal:5000/karmab/origin-keepalived-ipfailover:latest
-oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/mdns-publisher:latest registry.dsal:5000/karmab/mdns-publisher:latest
-oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kubectl:latest registry.dsal:5000/karmab/kubectl:latest
-oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kcli:latest registry.dsal:5000/karmab/kcli:latest
+include::example$3-mirror-karmab-images.sh[]
 ----
+
+
 
 [#mirrorocmirror]
 == Mirror with oc-mirror binary
 
-From the Hypervisor machine:
+From the Hypervisor machine we will download de `oc-mirror` binary, and then we will build a "mirror-set" (config for `oc-mirror`) for releases 4.9.10 and 4.9.22:
 
 - Download binary `oc-mirror`
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -73,11 +71,11 @@ tar xvfz oc-mirror.tar.gz
 cp oc-mirror /usr/local/bin/
 chmod +x /usr/local/bin/oc-mirror
 ----
++
+NOTE: We use the latest version because problems with custom catalog sources
 
-NOTE: use latest version because problems with custom catalog sources
-
-- Copy auth to docker directory
-
+- Copy auth/pull-secret to docker directory (we did the same in the Registry VM, but now we do it in the hypervisor)
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -85,26 +83,28 @@ mkdir -p ~/.docker && cp pull-secret-all.json ~/.docker/config.json
 ----
 
 - Init image set config file
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-oc-mirror init --registry registry.dsal:5000/mirror > 3-imageset-config.yaml
+oc-mirror init --registry registry.dsal:8443/mirror > 3-imageset-config.yaml
 ----
 
 - Or directly you can create/edit the file `3-imageset-config.yaml`
-
++
 [source,yaml,subs="+macros,+attributes"]
 ----
 include::example$3-imageset-config.yaml[]
 ----
 
 - Run mirror
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 oc-mirror --config=./3-imageset-config.yaml  docker://registry.dsal:8443/mirror
 ----
 
-If you wish you can browse the Web UI in the port `8443` and watch images mirrored
+If you wish, you can browse the Web UI of the Quay mirror-registry in the port `8443` and watch images mirrored (https://registry.dsal:8443). Remember, you should have sshuttle tunnel running if you want to access to the libvirt network.
+
+image::quay-oc-mirror.png[oc-mirror in quay, 800]

@@ -1,41 +1,44 @@
 = Cluster Deployment
 include::_attributes.adoc[]
 
-We will use the Hypervisor to deploy cluster with `kcli`. Connect to it via ssh, become `root` and follow the steps. This first installation is a connected deployment. All images will be downloaded from Internet.
+We will use the Hypervisor to deploy cluster with `kcli`. `kcli` deploys an Agnostic installation Openshift in VMs of libvirtd. 
 
-- Install openshift tools
+> This first installation is a connected deployment. All images will be downloaded from Internet.
 
-[.console-input]
-[source,bash,subs="+macros,+attributes"]
-----
-dnf -y -q install wget
-wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz
-tar xvfz openshift-client-linux.tar.gz
-mv oc /usr/local/bin/
-mv kubectl /usr/local/bin/
-rm -f openshift-client-linux.tar.gz
-echo "export PATH=$PATH:/usr/local/bin/" >> ~/.bashrc
-----
+To do the deployment, connect to the Hypervisor via ssh, become `root`, and follow the next steps.  
 
-- Copy pull secret (`pull-secret-all.json`) from `registry` VM to the hypervisor:
+// - Install openshift tools
 
+// [.console-input]
+// [source,bash,subs="+macros,+attributes"]
+// ----
+// wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz
+// tar xvfz openshift-client-linux.tar.gz
+// mv oc /usr/local/bin/
+// mv kubectl /usr/local/bin/
+// rm -f openshift-client-linux.tar.gz
+// echo "export PATH=$PATH:/usr/local/bin/" >> ~/.bashrc
+// ----
+
+- The pull secret was downloaded into the registry VM. Now copy the pull secret (`pull-secret-all.json`) from `registry` VM to the hypervisor:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 kcli scp registry:/tmp/pull-secret-all.json .
 ----
-
++
 NOTE: Copy before in the registry VM the pull-secret-all.json file to /tmp
 
-- Deploy cluster with `kcli`
-
+- Deploy cluster with `kcli` (in our case an Openshift SNO baremetal release 4.9.10)
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 kcli create kube openshift \
 -P ctlplanes=1 \
 -P workers=0 \
--P ctlplane_memory=16384 \
+-P ctlplane_memory=18432 \
 -P disk_size=120 \
 -P tag=4.9.10 \
 -P pull_secret=/root/pull-secret-all.json  \
@@ -44,21 +47,23 @@ kcli create kube openshift \
 -P api_ip=192.168.122.253 \
 kcli-ocp-dsal
 ----
++
+NOTE: `kcli` download the proper Openshift installer, all images needed, create the `install-config`, VMs, directories and all necessary, and then it deploy an Openshift cluster by itself. It will take about 20', read the logs and be patient.
 
 - Check cluster it's working. Export `KUBECONFIG` variable:
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 export KUBECONFIG=/root/.kcli/clusters/lab-test/auth/kubeconfig
 ----
-
-- And then
-
++
+and then
++
 [.console-output]
 [source,bash,subs="+macros,+attributes"]
 ----
-# oc get clusterversion,nodes,co
+$ oc get clusterversion,nodes,co
 NAME                                         VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
 clusterversion.config.openshift.io/version   4.9.10    True        False         65m     Cluster version is 4.9.10
 
@@ -99,3 +104,6 @@ clusteroperator.config.openshift.io/operator-lifecycle-manager-packageserver   4
 clusteroperator.config.openshift.io/service-ca                                 4.9.10    True        False         False      78m     
 clusteroperator.config.openshift.io/storage                                    4.9.10    True        False         False      78m     
 ----
+
+
+Now, we have an Openshift cluster SNO deployed and accesible. In the next section we will become it desconnected.

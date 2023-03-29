@@ -1,16 +1,18 @@
 = Disconnected deployment
 include::_attributes.adoc[]
 
-We will mirror 4.11.20 Openshift release images in registry-mirror (8443), so create imageset config file `6-imageset-config.yaml`
+Now, we are going to deploy an Openshift directly disconnected. For that, we need to mirror a new release (4.11.20) and then deploy it with `kcli`.
 
+- We will mirror 4.11.20 Openshift release images in registry-mirror (8443), so create imageset config file `6-imageset-config.yaml`
++
 [.console-input]
 [source,yaml,subs="+macros,+attributes"]
 ----
 include::example$6-imageset-config.yaml[]
 ----
 
-- Run mirror
-
+- Run `oc-mirror` with the config:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -18,7 +20,7 @@ oc-mirror --config=./6-imageset-config.yaml  docker://registry.dsal:8443/mirror
 ----
 
 - Copy release image to releases repository (kcli requirements reason):
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -31,7 +33,7 @@ oc image mirror -a ~/pull-secret-all.json \
 ----
 
 - Mirror kcli images
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -45,18 +47,18 @@ oc image mirror -a ~/pull-secret-all.json  quay.io/karmab/kcli:latest registry.d
 ----
 
 - Deploy cluster with kcli
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 kcli create kube openshift \
 -P ctlplanes=1 -P workers=0 \
--P ctlplanes_memory=16384 \
+-P ctlplane_memory=18432 \
 -P disk_size=120 \
 -P tag=4.11.20 \
 -P pull_secret=~/pull-secret-all.json  \
 -P cluster=lab-test-disconnected \
--P domain=labdis.dsal \
+-P domain=lab.dsal \
 -P disconnected_url=registry.dsal:8443 \
 -P disconnected_prefix=mirror/openshift/release \
 -P disconnected_user=registry \
@@ -67,14 +69,14 @@ kcli create kube openshift \
 ----
 
 - Take a look to the install-config.yaml created by kcli
-
++
 [.console-output]
 [source,yaml,subs="+macros,+attributes"]
 ----
 $ cat ~/.kcli/clusters/lab-test-disconnected/install-config.yaml.bck
 
 apiVersion: v1
-baseDomain: labdis.dsal
+baseDomain: lab.dsal
 compute:
 - name: worker
   replicas: 0
@@ -110,7 +112,7 @@ imageContentSources:
 ----
 
 - Check cluster it's working. Export `KUBECONFIG` variable:
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -118,7 +120,7 @@ export KUBECONFIG=/root/.kcli/clusters/lab-test-disconnected/auth/kubeconfig
 ----
 
 - And then, to check all is correct
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----

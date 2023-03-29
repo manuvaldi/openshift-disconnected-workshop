@@ -1,18 +1,12 @@
 = Convert Cluster to disconnected
 include::_attributes.adoc[]
 
-We have 4 registries:
+We have 2 registries with images mirrored:
 
 - A registry v2 with 4.9.10 in registry.dsal:5000
 - A registry mirror-registry method with 4.9.10 and 4.9.22 in registry.dsal:8443
-- A registry cache with a minimal/basic Quay deployment in registry.dsal (443)
-- A registry cache with a registry-cache in registry.dsal:6443
 
-We are going to upgrade the cluster in this order:
-
-4.9.10 -> 4.9.22 -> 4.10.20 -> 4.11.20
-
-We will use the different registries to get available the images for the cluster. But first of all we will "disconnect" our cluster.
+So let's go to "disconnect" our cluster.
 
 [#importca]
 == Import CA certificates
@@ -20,7 +14,7 @@ We will use the different registries to get available the images for the cluster
 (Following this procedure https://docs.openshift.com/container-platform/4.11/cicd/builds/setting-up-trusted-ca.html)
 
 - Copy registry ca cert into your machine as `ca.crt`
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -28,11 +22,13 @@ kcli scp registry:/data/registry/certs/registry.crt .
 mv registry.crt ca.crt
 ----
 
-- Create configmap with the ca certificates for every registry (the same in our case)
-
+- Create a configmap with the CA certificates for every registry (the same in our case)
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
+export KUBECONFIG=/root/.kcli/clusters/lab-test/auth/kubeconfig
+
 oc create configmap registry-cas -n openshift-config \
 --from-file=registry.dsal..5000=ca.crt \
 --from-file=registry.dsal..8443=ca.crt \
@@ -41,7 +37,7 @@ oc create configmap registry-cas -n openshift-config \
 ----
 
 - Enable additional trusted ca:
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
@@ -51,10 +47,12 @@ oc patch image.config.openshift.io/cluster --patch '{"spec":{"additionalTrustedC
 [#configuremirrors]
 == Configure mirrors in the cluster
 
-A kcli openshift deployment runs some custom pods. `ImageContentSourcePolicy` object only allows digest references for images. Kcli pods use tags instead of digest. To be able to have an usable cluster we need to create a machine-config file to specify mirror configure for no only digest. So, following these steps (https://access.redhat.com/solutions/4817401):
+A `kcli` Openshift deployment runs some custom pods of kcli software. So if we are going to disconnect the cluster, we need also those images mirrored and available. 
 
-- Create a registry.conf file (remember we mirror those images in the mirroring section ):
+`ImageContentSourcePolicy` object only allows digest references for images. Kcli deployments use tags instead of digest. To be able to have an usable cluster we need to create a machine-config file to specify mirror configuration for not-only digest. So, following these steps (https://access.redhat.com/solutions/4817401) to deploy mirroring config to cri-o (container engine) in the nodes we will get kcli images available. 
 
+- Create a `registry.conf` file (remember we mirror those images in the mirroring section ):
++
 [.console-input]
 [source,txt]
 ----
@@ -68,58 +66,59 @@ location = "registry.dsal:5000/karmab"
 
 [[registry.mirror]]
 location = "registry.dsal:8443/karmab"
-
 ----
++
+NOTE: Take note we will mirror kcli images to both registries
 
-- get base64 from this file:
-
+- Get base64 from this file:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 cat registry.conf.file | base64 -w0
 ----
-
++
 [.console-output]
 [source,bash,subs="+macros,+attributes"]
 ----
 W1tyZWdpc3RyeV1dCiAgcHJlZml4ID0gIiIKICBsb2NhdGlvbiA9ICJxdWF5LmlvL2thcm1hYiIKICBtaXJyb3ItYnktZGlnZXN0LW9ubHkgPSBmYWxzZQoKW1tyZWdpc3RyeS5taXJyb3JdXQpsb2NhdGlvbiA9ICJyZWdpc3RyeS5kc2FsOjUwMDAva2FybWFiIgoKW1tyZWdpc3RyeS5taXJyb3JdXQpsb2NhdGlvbiA9ICJyZWdpc3RyeS5kc2FsOjg0NDMva2FybWFiIgo=
 ----
 
-- create machine-config file (`4-mc-99-karmab-registries.yaml`):
-
+- Create machine-config file (`4-mc-99-karmab-registries.yaml`):
++
 [.console-input]
 [source,yaml,subs="+macros,+attributes"]
 ----
 include::example$4-mc-99-karmab-registries.yaml[]
 ----
 
-- and apply
-
+- And apply
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 oc apply -f 4-mc-99-karmab-registries.yaml
 ----
-
-NOTE: This operation takes some time because our SNO cluster needs to restart the node. Wait for the cluster to be available to continue.
++
+NOTE: This operation will take some time because our SNO cluster needs to restart the node. Please wait until the cluster is available again before continuing.
 
 - Now we will create the imagecontentsourcepolicy object (`4-icsp-registry-v2-5000.yaml`)
-
++
 [.console-input]
 [source,yaml,subs="+macros,+attributes"]
 ----
 include::example$4-icsp-registry-v2-5000.yaml[]
 ----
 
-- and apply:
-
+- And apply it:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 oc apply -f 4-icsp-registry-v2-5000.yaml
 ----
 
-Now, you can check config directly in the node:
+Now, you can check the config directly in the node executing this command:
 
 [.console-output]
 [source,bash,subs="+macros,+attributes"]
@@ -169,9 +168,9 @@ registries:
 [#updatepullsecret]
 == Update global pull secret
 
-Our OCP will need the credentials/pull-secret to be able to access to the images from registries. (Following https://docs.openshift.com/container-platform/4.11/updating/updating-restricted-network-cluster.html#images-update-global-pull-secret_updating-restricted-network-cluster)
+Our OCP will need the credentials/pull-secret to be able to access to the images from the private registries. (Following https://docs.openshift.com/container-platform/4.11/updating/updating-restricted-network-cluster.html#images-update-global-pull-secret_updating-restricted-network-cluster)
 
-- Change pull secret with our `pull-secret-all.yaml`
+If you remember we modified the file `pull-secret-all.yaml` from our home directory, and we added auths/credentials for the different private registries. Now, we will replace the Openshift global pull secret with these version:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -186,16 +185,16 @@ oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson
 To block internet and isolated cluster (outgoings connections), follow next steps from the hypervisor machine:
 
 - Drop traffic from libvirtd network:
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 iptables -I FORWARD -s 192.168.122.0/24  -j DROP
 ----
-
++
 [NOTE]
 ====
-To recover internet:
+To recover internet, use:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -205,13 +204,14 @@ iptables -D FORWARD -s 192.168.122.0/24  -j DROP
 ====
 
 - Because we have 2 registries in cache mode, we will allow the registry VM access to Internet, so open the traffic for it:
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-iptables -I FORWARD -s 192.168.122.22/32  -j ACCEPT
+iptables -I FORWARD -s 192.168.122.XX/32  -j ACCEPT
 ----
-
++
+NOTE: Change XX for the IP of the registry VM
 
 [#reboot]
 == Reboot node and check registry logs

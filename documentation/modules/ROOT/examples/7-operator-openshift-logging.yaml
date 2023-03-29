@@ -30,7 +30,7 @@ metadata:
   name: "elasticsearch-operator"
   namespace: "openshift-operators-redhat"
 spec:
-  channel: "stable-5.1"
+  channel: "stable"
   installPlanApproval: "Automatic"
   source: "redhat-operator-index"
   sourceNamespace: "openshift-marketplace"

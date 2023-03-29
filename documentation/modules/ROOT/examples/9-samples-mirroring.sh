@@ -11,7 +11,7 @@ for key in `echo $json | jq --raw-output '.data | keys[]'`; do
   echo "IS: $key"
   echo "Image: $image"
   echo "Path: $urlpath"
-  echo "$key: '${dstregistry}${urlpath}'`" >> samples-configmap-data.txt
+  echo "$key: '${dstregistry}${urlpath}'" >> samples-configmap-data.txt
   if echo $urlpath | grep -q -v ":"; then
     continue
   fi

@@ -1,69 +1,70 @@
 = Disconnected Upgrades
 include::_attributes.adoc[]
 
-Now, we have our cluster disconnected. Now we will upgrade using the different registry types deployed in previous sections:
+We have our cluster totally disconnected. Now, we will upgrade using the different registry types deployed in previous sections:
 
-4 registries:
+We have 4 registries:
 
-- A registry v2 with 4.9.10 in registry.dsal:5000
-- A registry mirror-registry method with 4.9.10 and 4.9.22 in registry.dsal:8443
-- A registry cache with a minimal/basic Quay deployment in registry.dsal (443). it can cache any release of Openshift. We will use it for 4.10.20 release.
-- A registry cache with a registry-cache in registry.dsal:6443. It can cache any release of Openshift. We will use it for 4.11.20 release.
+- A registry:v2 with *4.9.10* release mirrored in registry.dsal:5000
+- A registry mirror-registry method with *4.9.10* and *4.9.22* releases mirrored in registry.dsal:8443
+- A registry cache with a minimal/basic Quay deployment in registry.dsal (443)
+- A registry cache with a registry-cache in registry.dsal:6443
 
 So, we are going to upgrade the cluster in this order:
 
 4.9.10 -> 4.9.22 -> 4.10.20 -> 4.11.20
 
+We are using currently the 4.9.10 release in our disconnected cluster, so let's start the upgrades. The first one to 4.9.22.
 
 [#upgrade1]
 == Upgrade to 4.9.22 with a registry mirror-registry in registry.dsal (8443)
 
-Our 4.9.22 release images are in the registry (mirror-registry) at url `registry.dsal:8443`
+In the "Mirroring Openshift Images" we did a mirror of 4.9.22 release images. Our 4.9.22 release images are in the registry (mirror-registry) at the url `registry.dsal:8443`. To be able to upgrade we need to "tell" to the cluster where it will find images (mirroring config):
 
 - Create new `ImageContentSourcePolicy` (`5-icsp-registry-mirror-8443.yaml`)
-
++
 [.console-input]
 [source,yaml,subs="+macros,+attributes"]
 ----
 include::example$5-icsp-registry-mirror-8443.yaml[]
 ----
 
-- and apply
-
+- And apply
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 oc apply -f 5-icsp-registry-mirror-8443.yaml
 ----
-
-NOTE: don't worry for applying different `ImageContentSourcePolicy` objects in the cluster. The configuration is incremental. If an image isn't found in a mirror, the engine tries in the next mirror registry configured.
++
+NOTE: don't worry for applying different `ImageContentSourcePolicy` objects in the cluster. The configuration is incremental. If an image isn't found in a mirror, the engine tries to find it in the next mirror registry configured.
 
 
 - Upgrade cluster from 4.9.10 to 4.9.22
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 oc adm upgrade --to-image=registry.dsal:8443/mirror/openshift/release-images:4.9.22-x86_64 --force --allow-explicit-upgrade
 ----
 
-- Check registry logs to watch if cluster is requesting image to the registry
-
+- Check registry logs to watch if cluster is requesting images to the registry
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 podman logs --tail=10 -f quay-app
 ----
 
-- You can monitor the upgrade from CLI:
-
+- You can also monitor the upgrade from CLI:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 oc get clusterversion; oc get co
 ----
 
-Wait until all `ClusterOperators` are available and ready
+Upgrade process take some time. Wait until all `ClusterOperators` are available and Ready.
 
 
 [#upgrade2]
@@ -72,44 +73,46 @@ Wait until all `ClusterOperators` are available and ready
 In this upgrade we will use our basic/mini Quay deployment acting as registry cache in url `registry.dsal(:443)`. Follow the next steps to upgrade:
 
 - Create the new `ImageContentSourcePolicy` (`5-icsp-registry-cache-443.yaml`)
-
++
 [.console-input]
 [source,yaml,subs="+macros,+attributes"]
 ----
 include::example$5-icsp-registry-cache-443.yaml[]
 ----
 
-- and apply
-
+- and apply it
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-oc apply -f 5-icsp-registry-mirror-443.yaml
+oc apply -f 5-icsp-registry-cache-443.yaml
 ----
 
 - Upgrade cluster from 4.9.22 to 4.10.20
-
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 oc adm upgrade --to-image=registry.dsal/cache-quayio/openshift-release-dev/ocp-release:4.10.20-x86_64 --force --allow-explicit-upgrade
 ----
 
-- check registry logs
-
+- Check registry logs
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 podman logs --tail=10 -f quay-standalone-basic
 ----
 
-- Check clusteroperators
-
+- Check `ClusterOperators` and monitor the upgrade from CLI:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-oc get co
+oc get clusterversion; oc get co
 ----
+
+
 
 [#upgrade3]
 == Upgrade to 4.11.20 with a registry cache in registry.dsal (6443)
@@ -135,7 +138,7 @@ oc apply -f 5-icsp-registry-cache-6443.yaml
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-oc delete ImageContentSourcePolicy icsp-quay-cache-443
+oc delete ImageContentSourcePolicy icsp-quay-mirror-443
 ----
 
 - Upgrade cluster from 4.10.20 to 4.11.20 allocated in registry-mirror

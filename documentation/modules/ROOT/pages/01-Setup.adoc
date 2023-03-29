@@ -1,3 +1,4 @@
+ifndef::imagesdir[:imagesdir: ../assets/images/]
 = Setup
 include::_attributes.adoc[]
 
@@ -25,28 +26,18 @@ image::environment.png[Lab Environment, 800]
 [#prerequisite-binaries]
 === kcli and binaries
 
-Connect via ssh to the hypervisor and become root with `sudo su`. The rest of the workshop we will use `root` as default user.
+Connect via ssh to the *hypervisor* and become root with `sudo su`. The rest of the workshop we will use `root` as default user.
 
-- Install libvirtd
+- Install libvirtd and basic binaries
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-yum -y install libvirt libvirt-daemon-driver-qemu qemu-kvm
+yum -y install libvirt libvirt-daemon-driver-qemu qemu-kvm dnf nano jq vim wget podman skopeo
 usermod -aG qemu,libvirt $(id -un)
 newgrp libvirt
 systemctl enable --now libvirtd
 ----
-
-- Create a pool with the additional disk mounted in `/mnt`
-
-[.console-input]
-[source,bash,subs="+macros,+attributes"]
-----
-kcli create pool -p /mnt default
-----
-
-IMPORTANT: Change `/mnt` for the directory where you have enough space (>370GB)
 
 - Install `kcli`
 
@@ -56,12 +47,31 @@ IMPORTANT: Change `/mnt` for the directory where you have enough space (>370GB)
 curl https://raw.githubusercontent.com/karmab/kcli/main/install.sh | sudo bash
 ----
 
-- Install some binaries (oc, kubectl, opm, wget, podman ):
+
+- Create a pool with the additional disk mounted in `/mnt`
+
+Probably you may format and mount extra disk to `/mnt` path. Example:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-dnf -y -q install wget podman
+mkfs.xfs -f /dev/sdb1 && mount /dev/sdb1 /mnt
+----
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+kcli create pool -p /mnt default
+----
+
+IMPORTANT: Change `/mnt` for the directory where you have enough space (>370GB).
+
+
+- Install some binaries (oc, kubectl and opm):
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
 wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.11.20/openshift-client-linux.tar.gz
 tar xvfz openshift-client-linux.tar.gz
 mv oc /usr/local/bin/
@@ -92,9 +102,18 @@ To open a "*VPN*" execute from your laptop/PC:
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-sshuttle -r azureuser@<public ip of your machine> 192.168.122.0/24  --ssh-cmd 'ssh -i <your certificate>.pem'
+sshuttle -r root@<public ip of your machine> 192.168.122.0/24
 ----
-This command will route the traffic from our laptop/PC to the network `192.168.122.0/24` (libvirtd network in our hypervisor) via ssh connection.
+
+or if you connect using certificates:
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+sshuttle -r root@<public ip of your machine> 192.168.122.0/24  --ssh-cmd 'ssh -i <your certificate>.pem'
+----
+
+This command will route the traffic from *YOUR LAPTOP/PC* to the network `192.168.122.0/24` (libvirtd network in our hypervisor) via ssh connection.
 
 [#registryvm]
 == Registry Virtual Machine
@@ -108,7 +127,15 @@ The first VM will be our `registry` machine. In this VM we will test 4 different
 . Basic installation of Quay: a minimal non-prod installation of Quay, to be able to enable and configure the mirror function in an org.
 . Registry cache. An open source software created by @manuvaldi (https://github.com/manuvaldi/registry-cache) that allows caching of images from different repositories in a simple way.
 
-Follow next steps to create all registries:
+Follow next steps to create a VM containing all registries servers:
+
+- Before create any VM we will generate a key pair for ssh
+
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+ssh-keygen -t rsa
+---- 
 
 - Download Fedora image with `kcli`
 
@@ -135,7 +162,7 @@ $ kcli list vm
 +----------+--------+---------------+---------------------------------------+-------+--------------+
 |   Name   | Status |       Ip      |                 Source                |  Plan |   Profile    |
 +----------+--------+---------------+---------------------------------------+-------+--------------+
-| registry |   up   | 192.168.122.7 | Fedora-Cloud-Base-37-1.7.x86_64.qcow2 | kvirt | fedoralatest |
+| registry |   up   | 192.168.122.X | Fedora-Cloud-Base-37-1.7.x86_64.qcow2 | kvirt | fedoralatest |
 +----------+--------+---------------+---------------------------------------+-------+--------------+
 ----
 
@@ -144,7 +171,7 @@ $ kcli list vm
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-echo "192.168.122.7 registry.dsal" >> /etc/hosts
+echo "192.168.122.X registry.dsal" >> /etc/hosts
 ----
 
 > To refer to this VM we will use always the DNS `registry.dsal`
@@ -157,10 +184,25 @@ echo "192.168.122.7 registry.dsal" >> /etc/hosts
 systemctl reload libvirtd
 ----
 
+Now we will connect to the registry VM and we will start to install the different containers registry solutions:
+
+
 [#registryvm-registryv2]
 === Create registry with registry:v2 image (classic)
 
 Connect to registry instance with `kcli ssh registry` and then (uso `sudo su` again):
+
+- connect to VM:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+$ kcli ssh registry
+
+[fedora@registry ~]$ sudo su
+[root@registry fedora]#
+----
+and now from the prompt of the registry VM do:
 
 - set permissive o disable selinux
 
@@ -211,8 +253,30 @@ cat <<EOF > ~/registry-secret.json
 EOF
 ----
 
+After this step we have:
+
+- Our Fedora VM updated
+- Certificates for `registry.dsal` host, which we will use for all our registry servers, in the path `/data/registry/certs/`.
+- A `registry:v2` container.
+- A htpasswd file with the credentials
+- A json file with the credentials to accesss to this registry.
+
+We can see our containter running:
+
+[.console-output]
+[source,bash,subs="+macros,+attributes"]
+----
+[root@registry fedora]# podman ps
+CONTAINER ID  IMAGE                         COMMAND               CREATED         STATUS         PORTS       NAMES
+60fe656511eb  docker.io/library/registry:2  /etc/docker/regis...  15 seconds ago  Up 15 seconds              ocp-registry
+----
+ 
+
+
 [#registryvm-mirror-registry]
 === Create registry with mirror-registry
+
+From the registry VM do:
 
 - Install dependencies and download binary
 
@@ -221,31 +285,42 @@ EOF
 ----
 dnf -y -q install podman acl wget
 mkdir -p ~/mirror-registry && cd ~/mirror-registry
-wget https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.2.9/mirror-registry.tar.gz
+wget https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/mirror-registry/1.3.2/mirror-registry.tar.gz
 tar xvfz mirror-registry.tar.gz
 ----
 
-- Create registry
+- Create the mirror-registry executing the next command:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-./mirror-registry install --quayHostname registry.dsal --quayRoot /data/mirror-registry --initUser registry --initPassword redhat12345678 --sslCert /data/registry/certs/registry.crt --sslKey /data/registry/certs/registry.key
+./mirror-registry install \
+  --quayHostname registry.dsal \
+  --quayRoot /data/mirror-registry \
+  --initUser registry \
+  --initPassword redhat12345678 \
+  --sslCert /data/registry/certs/registry.crt \
+  --sslKey /data/registry/certs/registry.key
 ----
 
-This will run a registry with url:
+As you can see we reused the certificates and the same user/password.
+
+After some time, A a mirror-registry registry will be running with the url:
 
 [.console-output]
 [source,bash,subs="+macros,+attributes"]
 ----
 ....
-Quay is available at https://registry.dsal:8443 with credentials (registry, redhat12345678)
+INFO[2023-03-14 15:02:25] Quay installed successfully, permanent data is stored in /data/mirror-registry 
+INFO[2023-03-14 15:02:25] Quay is available at https://registry.dsal:8443 with credentials (registry, redhat12345678) 
 ----
+
+
 
 [#registryvm-quay-standalone]
 === Create Registry Quay standalone with proxy cache/mirror functionality
 
-First of all go to `https://console.redhat.com/openshift/downloads#tool-pull-secret` and copy a Openshift pull secret to `~/pull-secret.json`
+First of all, open a browser in your laptop and go to `https://console.redhat.com/openshift/downloads#tool-pull-secret` and copy a Openshift pull secret to `~/pull-secret.json`
 
 - Now, copy it to docker dir:
 
@@ -255,7 +330,7 @@ First of all go to `https://console.redhat.com/openshift/downloads#tool-pull-sec
 mkdir -p /root/.docker && cp ~/pull-secret.json ~/.docker/config.json
 ----
 
-- Prepare and run postgresql and redis containers. Then we will run a quay config container to be able to create a configuration for our "mini" quay.
+- Prepare and run postgresql and redis containers. Then, we will run a Quay Config container to be able to create a configuration for our "mini" Quay deployment.
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -284,36 +359,48 @@ podman run -d  --name quay-standalone-redis \
 podman run --rm -it --name quay_config -p 80:8080 -p 443:8443 registry.redhat.io/quay/quay-rhel8:v3.8.0 config secret
 ----
 
-NOTE: the last command run the quay config container. We can access to the web ui from our laptop browser. It is possible because you are running sshuttle VPN.
+NOTE: The last command run the quay config container and leave it in foreground. We can access to the web ui from our laptop browser. It is possible because you are running `sshuttle` VPN.
 
-IMPORTANT: take note of passwords used for the next step ;)
+IMPORTANT: take note of passwords (`secret`) used for the next step ;)
+
+
 
 - Now we are going to create a config file for quay. Open in your browser the config app in http://registry.dsal (you can do it using the registry VM IP address instead)
   - login to UI with credentials: `quayconfig/secret`
   - In Server Hostname: `registry.dsal`
   - Use IP of `registry` machine for postgres and redis connection
++
+** PostgreSQL config:
++
+image::postgresql-config.png[Postgres Config, 800]
++
+** Redis config:
++
+image::redis-config.png[Redis Config, 800]
   - All passwords and port are in the script. look before asking!!!
   - In super-users section add 'registry' user
 
-You can stop config container with Contro+C
+Now, validate config pushing the ending button and download de config. After that, you can stop config container with Control+C.
 
-- Download quay config and copy it to registry machine
+We need to leave the config in the registry VM, so we will copy de config bundle to hypervisor, and from the hypervisor to registry VM:
+
+- Download quay config and copy it to registry machine. From your laptop/PC run:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-scp -i testlab01_key.pem quay-config.tar.gz azureuser@20.93.161.196:
+scp quay-config.tar.gz root@<fqdn/ip of your hypervisor>:
 ----
 
-- and then from hypervisor to the registry machine
+- and then copy from hypervisor to the registry VM:
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]subs="+macros,+attributes"]subs="+macros,+attributes"]
 ----
-kcli scp /home/azureuser/quay-config.tar.gz registry:/tmp/
+kcli scp /root/quay-config.tar.gz registry:/tmp/
 ----
 
-- Prepare config and storage data dirs
+- Now, already in the Registry VM, prepare config and storage data dirs
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -345,28 +432,37 @@ podman run -d  -p 80:8080 -p 443:8443  \
    registry.redhat.io/quay/quay-rhel8:v3.8.0
 ----
 
-- Enter in web UI interface, create user `registry/redhat12345678` and create a new organization `cache-quayio` and configure mirror with next values:
-  - Remote Registry: `quay.io`
-  - Remote Registry Username, extract from pull-secret:
+- Enter in web UI interface, *create* user `registry/redhat12345678` and create a new organization `cache-quayio`, and in the organization settings configure mirror with next values:
 
+  ** Remote Registry: `quay.io`
+  ** Remote Registry Username, extract from pull-secret:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 cat ~/pull-secret.json | jq  -r '.auths["quay.io"].auth |select (.!=null)' | base64 -d | awk -F':' '{print $1}'
 ----
 
-- Remote Registry Password:
-
+** Remote Registry Password:
++
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 cat ~/pull-secret.json | jq  -r '.auths["quay.io"].auth |select (.!=null)' | base64 -d | awk -F':' '{print $2}'
 ----
++
+Like this: 
++
+image::proxy-cache-config.png[Quay Proxy Cache Config, 800]
 
-- and Save
+** and Save
+
 
 [#registryvm-cachecontainer]
 === Creating Registry Cache with registry-cache container
+
+From Registry VM do:
+
 
 - Install dependencies and create dirs
 
@@ -427,6 +523,8 @@ To be able to test, first of all create credentials and copy it to docker dir (i
 [source,bash,subs="+macros,+attributes"]
 ----
 cat ~/pull-secret.json | jq  > ~/pull-secret-all.json
+
+vi  ~/pull-secret-all.json
 ----
 
 - Add credentials in pull-secret-all.json (copy next lines)
@@ -453,12 +551,13 @@ cat ~/pull-secret.json | jq  > ~/pull-secret-all.json
     }
 ----
 
-- Copy it again to `.docker` dir
+- Copy it again to `.docker` dir (and to `/tmp` directory for a later use )
 
 [.console-input]
 [source,bash,subs="+macros,+attributes"]subs="+macros,+attributes"]subs="+macros,+attributes"]
 ----
 cp ~/pull-secret-all.json ~/.docker/config.json
+cp ~/pull-secret-all.json /tmp/
 ----
 
 Now we will test all registries:
