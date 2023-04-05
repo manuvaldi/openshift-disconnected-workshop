@@ -272,7 +272,7 @@ openshift-marketplace   redhat-operators      Red Hat Operators     grpc   Red H
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></p>
+<p>Default catalogs with images mirrored and registry mirror config</p>
 </li>
 <li>
 <p>Default catalogs with images mirrored and Custom catalogs</p>
@@ -329,9 +329,9 @@ marketplace-operator-7696c9454c-b4zwl   1/1     Running            2          18
 <p>All pods are in <code>ImagePullBackOff</code> status. Let&#8217;s see how to solve it:</p>
 </div>
 <div class="sect2">
-<h3 id="defaultmirrored"><a class="anchor" href="#defaultmirrored"></a>Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></h3>
+<h3 id="defaultmirrored"><a class="anchor" href="#defaultmirrored"></a>Default catalogs with images mirrored and registry mirror config</h3>
 <div class="paragraph">
-<p>These option is based on mirroring of catalog images and then use a <code>ImageContentSourcePolicy</code> object:</p>
+<p>This option is based on mirroring of catalog images, and then use a registry mirror config with a <code>machineConfig</code> object. We do not use <code>ImageContentSourcePolicy</code> because catalog are using tags reference in the images instead of digest:</p>
 </div>
 <div class="ulist">
 <ul>

@@ -442,20 +442,20 @@ spec:
 </div>
 </li>
 <li>
-<p>Now, update clusterVersion with graph url</p>
+<p>Now, update clusterVersion with graph url (we will use the fqdn from the k8s service dns)</p>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POLICY_ENGINE_GRAPH_URI="$(oc -n "openshift-update-service" get -o jsonpath='{.status.policyEngineURI}/api/upgrades_info/v1/graph{"\n"}' updateservice "service")"
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POLICY_ENGINE_GRAPH_URI="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph"
 
 oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>as an alternative, if the update service is in the same cluster, using k8s service dns:</p>
+<p>Alternatively, if you prefer to use the public route, you can execute the following command:</p>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POLICY_ENGINE_GRAPH_URI="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph"
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POLICY_ENGINE_GRAPH_URI="$(oc -n "openshift-update-service" get -o jsonpath='{.status.policyEngineURI}/api/upgrades_info/v1/graph{"\n"}' updateservice "service")"
 
 oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge</code></pre>
 </div>

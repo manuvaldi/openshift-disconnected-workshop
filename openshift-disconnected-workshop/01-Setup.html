@@ -357,7 +357,7 @@ systemctl enable --now libvirtd</code></pre>
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-Change <code>/mnt</code> for the directory where you have enough space (&gt;370GB).
+Since all VMs will be stored in the "pool," adequate space must be allocated for them. Therefore, if the current directory assigned for storage (/mnt) has less than 370GB of space available, it should be changed to a directory with sufficient space.
 </td>
 </tr>
 </table>
@@ -402,7 +402,7 @@ chmod +x /usr/local/bin/opm</code></pre>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r root@&lt;public ip of your machine&gt; 192.168.122.0/24</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r root@&lt;public ip of your hypervisor&gt; 192.168.122.0/24</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -410,7 +410,7 @@ chmod +x /usr/local/bin/opm</code></pre>
 </div>
 <div class="listingblock console-input">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r root@&lt;public ip of your machine&gt; 192.168.122.0/24  --ssh-cmd 'ssh -i &lt;your certificate&gt;.pem'</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sshuttle -r root@&lt;public ip of your hypervisor&gt; 192.168.122.0/24  --ssh-cmd 'ssh -i &lt;your certificate&gt;.pem'</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -580,7 +580,8 @@ setenforce 0</code></pre>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">REGISTRYHOSTNAME=registry.dsal
-dnf update -q -y
+
+# dnf update -q -y
 
 mkdir -p /data/registry/{auth,certs,data}
 
@@ -595,10 +596,10 @@ cat /data/registry/certs/registry.crt /data/registry/certs/registry.key  &gt; /d
 cp /data/registry/certs/registry.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust
 
-dnf -y -q install httpd-tools
+dnf -y install httpd-tools
 htpasswd -bBc /data/registry/auth/htpasswd registry redhat12345678
 
-dnf -y -q install podman
+dnf -y install podman acl
 podman create --name ocp-registry --net host -p 5000:5000 \
   -v /data/registry/data:/var/lib/registry:z -v /data/registry/auth:/auth:z \
   -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" \
