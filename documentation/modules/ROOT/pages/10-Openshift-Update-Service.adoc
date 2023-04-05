@@ -134,22 +134,22 @@ include::example$10-update-service-UpdateService.yaml[]
 oc apply -f 10-update-service-UpdateService.yaml
 ----
 
-- Now, update clusterVersion with graph url
-+
-[.console-input]
-[source,bash,subs="+macros,+attributes"]
-----
-POLICY_ENGINE_GRAPH_URI="$(oc -n "openshift-update-service" get -o jsonpath='{.status.policyEngineURI}/api/upgrades_info/v1/graph{"\n"}' updateservice "service")"
-
-oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge
-----
-+
-as an alternative, if the update service is in the same cluster, using k8s service dns:
+- Now, update clusterVersion with graph url (we will use the fqdn from the k8s service dns)
 +
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
 POLICY_ENGINE_GRAPH_URI="http://service-policy-engine.openshift-update-service/api/upgrades_info/v1/graph"
+
+oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge
+----
++
+Alternatively, if you prefer to use the public route, you can execute the following command:
++
+[.console-input]
+[source,bash,subs="+macros,+attributes"]
+----
+POLICY_ENGINE_GRAPH_URI="$(oc -n "openshift-update-service" get -o jsonpath='{.status.policyEngineURI}/api/upgrades_info/v1/graph{"\n"}' updateservice "service")"
 
 oc patch clusterversion version -p "{\"spec\":{\"upstream\":\"${POLICY_ENGINE_GRAPH_URI}\"}}" --type merge
 ----

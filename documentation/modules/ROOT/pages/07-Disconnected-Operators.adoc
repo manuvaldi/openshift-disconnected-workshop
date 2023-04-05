@@ -18,7 +18,7 @@ Before these catalogs/pods were sqlite-based catalogs. A sqlite database storage
 
 There are 3 options for catalogs in disconnected:
 
-. Default catalogs with images mirrored and `ImageContentSourcePolicy`
+. Default catalogs with images mirrored and registry mirror config
 . Default catalogs with images mirrored and Custom catalogs
 . Build a custom catalog
 
@@ -57,9 +57,9 @@ marketplace-operator-7696c9454c-b4zwl   1/1     Running            2          18
 All pods are in `ImagePullBackOff` status. Let's see how to solve it:
 
 [#defaultmirrored]
-===  Default catalogs with images mirrored and `ImageContentSourcePolicy`
+===  Default catalogs with images mirrored and registry mirror config
 
-These option is based on mirroring of catalog images and then use a `ImageContentSourcePolicy` object:
+This option is based on mirroring of catalog images, and then use a registry mirror config with a `machineConfig` object. We do not use `ImageContentSourcePolicy` because catalog are using tags reference in the images instead of digest:
 
 - Mirror catalogs images using `oc-mirror`. Create a imageset file (`7-imageset-config-catalogs.yaml`):
 +

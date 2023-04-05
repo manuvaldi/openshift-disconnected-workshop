@@ -8,3 +8,7 @@ include::_attributes.adoc[]
 - KCS5891131 - "Upgrade process fails in Openshift Container Platform 4 because the Ingress Operator failed: CanaryChecksRepetitiveFailures" - https://access.redhat.com/solutions/5891131
 
 - Disconnected Insight - https://docs.openshift.com/container-platform/4.11/support/remote_health_monitoring/remote-health-reporting-from-restricted-network.html
+
+- OLM Roadmap (Internal) - https://docs.google.com/presentation/d/1c-H_UcyeACq314QsK1aWo8qFi_iuZLzIHTJ7xQ-ZcTQ/edit#slide=id.gda9c905baf_5_47
+
+- Red Hat OpenShift Container Platform Update Graph - https://access.redhat.com/labs/ocpupgradegraph/update_path

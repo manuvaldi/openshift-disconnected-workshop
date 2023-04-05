@@ -75,7 +75,7 @@ NOTE: Take note we will mirror kcli images to both registries
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-cat registry.conf.file | base64 -w0
+cat registry.conf | base64 -w0
 ----
 +
 [.console-output]

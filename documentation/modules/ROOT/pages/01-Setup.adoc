@@ -64,7 +64,7 @@ mkfs.xfs -f /dev/sdb1 && mount /dev/sdb1 /mnt
 kcli create pool -p /mnt default
 ----
 
-IMPORTANT: Change `/mnt` for the directory where you have enough space (>370GB).
+IMPORTANT: Since all VMs will be stored in the "pool," adequate space must be allocated for them. Therefore, if the current directory assigned for storage (/mnt) has less than 370GB of space available, it should be changed to a directory with sufficient space.
 
 
 - Install some binaries (oc, kubectl and opm):
@@ -102,7 +102,7 @@ To open a "*VPN*" execute from your laptop/PC:
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-sshuttle -r root@<public ip of your machine> 192.168.122.0/24
+sshuttle -r root@<public ip of your hypervisor> 192.168.122.0/24
 ----
 
 or if you connect using certificates:
@@ -110,7 +110,7 @@ or if you connect using certificates:
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
 ----
-sshuttle -r root@<public ip of your machine> 192.168.122.0/24  --ssh-cmd 'ssh -i <your certificate>.pem'
+sshuttle -r root@<public ip of your hypervisor> 192.168.122.0/24  --ssh-cmd 'ssh -i <your certificate>.pem'
 ----
 
 This command will route the traffic from *YOUR LAPTOP/PC* to the network `192.168.122.0/24` (libvirtd network in our hypervisor) via ssh connection.
@@ -219,7 +219,8 @@ setenforce 0
 [source,bash,subs="+macros,+attributes"]
 ----
 REGISTRYHOSTNAME=registry.dsal
-dnf update -q -y
+
+# dnf update -q -y
 
 mkdir -p /data/registry/{auth,certs,data}
 
@@ -234,10 +235,10 @@ cat /data/registry/certs/registry.crt /data/registry/certs/registry.key  > /data
 cp /data/registry/certs/registry.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust
 
-dnf -y -q install httpd-tools
+dnf -y install httpd-tools
 htpasswd -bBc /data/registry/auth/htpasswd registry redhat12345678
 
-dnf -y -q install podman
+dnf -y install podman acl
 podman create --name ocp-registry --net host -p 5000:5000 \
   -v /data/registry/data:/var/lib/registry:z -v /data/registry/auth:/auth:z \
   -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" \

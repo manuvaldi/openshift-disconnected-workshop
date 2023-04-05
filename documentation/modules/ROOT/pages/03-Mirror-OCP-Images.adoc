@@ -82,7 +82,7 @@ NOTE: We use the latest version because problems with custom catalog sources
 mkdir -p ~/.docker && cp pull-secret-all.json ~/.docker/config.json
 ----
 
-- Init image set config file
+- We can "Init" the image set config file, and then edit it:
 +
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -90,7 +90,7 @@ mkdir -p ~/.docker && cp pull-secret-all.json ~/.docker/config.json
 oc-mirror init --registry registry.dsal:8443/mirror > 3-imageset-config.yaml
 ----
 
-- Or directly you can create/edit the file `3-imageset-config.yaml`
+- Please, create or modify the file named `3-imageset-config.yaml` to match the following content:
 +
 [source,yaml,subs="+macros,+attributes"]
 ----
