@@ -381,7 +381,7 @@ image::redis-config.png[Redis Config, 800]
   - All passwords and port are in the script. look before asking!!!
   - In super-users section add 'registry' user
 
-Now, validate config pushing the ending button and download de config. After that, you can stop config container with Control+C.
+Now, validate config pushing the ending button and download the config. After that, you can stop config container with Control+C.
 
 We need to leave the config in the registry VM, so we will copy de config bundle to hypervisor, and from the hypervisor to registry VM:
 

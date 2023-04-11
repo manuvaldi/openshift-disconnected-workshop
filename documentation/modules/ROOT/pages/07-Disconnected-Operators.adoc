@@ -77,7 +77,7 @@ include::example$7-imageset-config-catalogs.yaml[]
 oc-mirror --config=./7-imageset-config-catalogs.yaml  docker://registry.dsal:8443/mirror
 ----
 
-- Create a new `registry.conf` file because these images (catalog images) references are tags instead of digest:
+- Create a new `registry-conf-operators.txt` file because these images (catalog images) references are tags instead of digest:
 +
 [.console-input]
 [source,txt]
@@ -249,19 +249,7 @@ lvresize --resizefs -L+5G rootvg/tmplv
 ** cincinnati-operator
 
 
-- The following script, extract from json, one by one, the `packages` and `operators` related with the list above.
-+
-[.console-input]
-[source,bash,subs="+macros,+attributes"]
-----
-operators="elasticsearch-operator cluster-logging cincinnati-operator"
-echo "" > custom-catalog/configs/index.json
-for operator in $operators; do
-  cat redhat-operator-index.json | jq --arg operator "$operator" 'select( .package == $operator or .name == $operator)' >> custom-catalog/configs/index.json
-done
-----
-+
-or as an alternative script:
+- The following script extracts the `packages` and `operators` related to the list above:
 +
 [.console-input]
 [source,bash,subs="+macros,+attributes"]
@@ -538,6 +526,8 @@ Writing image mapping to oc-mirror-workspace/results-1674048845/mapping.txt
 Writing CatalogSource manifests to oc-mirror-workspace/results-1674048845
 Writing ICSP manifests to oc-mirror-workspace/results-1674048845
 ----
++
+NOTE: Make sure to remember the name of the directory that contains your generated results, which should be named `results-xxxx`. In the provided example, the directory is named `oc-mirror-workspace/results-1674048845`.
 +
 The result will be:
 

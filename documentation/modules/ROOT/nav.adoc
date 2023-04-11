@@ -36,7 +36,7 @@
 
 * xref:07-Disconnected-Operators.adoc[Disconnected Catalogs and Operators]
 ** xref:07-Disconnected-Operators.adoc#catalogs[Disconnected Catalogs]
-*** xref:07-Disconnected-Operators.adoc#defaultmirrored[Default catalogs with images mirrored and `ImageContentSourcePolicy`]
+*** xref:07-Disconnected-Operators.adoc#defaultmirrored[Default catalogs with images mirrored and registry mirror config]
 *** xref:07-Disconnected-Operators.adoc#defaultmirrroredcustomcatalogs[Default catalogs with images mirrored and Custom catalogs]
 *** xref:07-Disconnected-Operators.adoc#customcatalog[Custom catalog]
 ** xref:07-Disconnected-Operators.adoc#operators[Disconnected Operators]
