@@ -153,7 +153,7 @@
     <a class="nav-link" href="#catalogs">Disconnected Catalogs</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="#defaultmirrored">Default catalogs with images mirrored and <code>ImageContentSourcePolicy</code></a>
+    <a class="nav-link" href="#defaultmirrored">Default catalogs with images mirrored and registry mirror config</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#defaultmirrroredcustomcatalogs">Default catalogs with images mirrored and Custom catalogs</a>
@@ -364,7 +364,7 @@ mirror:
 </div>
 </li>
 <li>
-<p>Create a new <code>registry.conf</code> file because these images (catalog images) references are tags instead of digest:</p>
+<p>Create a new <code>registry-conf-operators.txt</code> file because these images (catalog images) references are tags instead of digest:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-txt hljs" data-lang="txt">[[registry]]
@@ -714,19 +714,7 @@ Take note our catalogs have prefix <code>mirror-*</code>
 </div>
 </li>
 <li>
-<p>The following script, extract from json, one by one, the <code>packages</code> and <code>operators</code> related with the list above.</p>
-<div class="listingblock console-input">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">operators="elasticsearch-operator cluster-logging cincinnati-operator"
-echo "" &gt; custom-catalog/configs/index.json
-for operator in $operators; do
-  cat redhat-operator-index.json | jq --arg operator "$operator" 'select( .package == $operator or .name == $operator)' &gt;&gt; custom-catalog/configs/index.json
-done</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>or as an alternative script:</p>
-</div>
+<p>The following script extracts the <code>packages</code> and <code>operators</code> related to the list above:</p>
 <div class="listingblock console-input">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">operators="elasticsearch-operator cluster-logging cincinnati-operator"
@@ -1119,6 +1107,18 @@ Writing image mapping to oc-mirror-workspace/results-1674048845/mapping.txt
 Writing CatalogSource manifests to oc-mirror-workspace/results-1674048845
 Writing ICSP manifests to oc-mirror-workspace/results-1674048845</code></pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Make sure to remember the name of the directory that contains your generated results, which should be named <code>results-xxxx</code>. In the provided example, the directory is named <code>oc-mirror-workspace/results-1674048845</code>.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>The result will be:</p>
